@@ -9,8 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@chakra-ui/color-mode": "^2.2.0",
+    "@chakra-ui/react": "^3.22.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.23.9",
     "lucide-react": "^0.525.0",
     "motion": "^12.23.6",
     "next": "15.4.1",

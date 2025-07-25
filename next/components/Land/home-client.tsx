@@ -3,10 +3,10 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import HeroSection from "@/components/layout/hero-section"
+import HeroSection from "@/components/Land/hero-section"
 import DashboardButton from "@/components/ui/dashboard-button"
-import SignInDialog from "@/components/auth/signin-dialog"
-import Footer from "@/components/layout/footer"
+import SignInDialog from "@/components/Auth/signin-dialog"
+import Footer from "@/components/Land/footer"
 
 export default function HomeClient() {
   const [open, setOpen] = useState(false)
@@ -15,7 +15,7 @@ export default function HomeClient() {
 
   const handleDashboardAccess = () => {
     if (session) {
-      router.push("/crm-dashboard")
+      router.push("/dashboard")
     } else {
       setOpen(true)
     }
