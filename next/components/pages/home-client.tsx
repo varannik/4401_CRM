@@ -1,28 +1,35 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import HeroSection from "@/components/layout/hero-section"
-import DashboardButton from "@/components/ui/dashboard-button"
-import SignInDialog from "@/components/auth/signin-dialog"
-import Footer from "@/components/layout/footer"
+import HeroSection from "@/components/Layout/hero-section"
+import DashboardButton from "@/components/UI/dashboard-button"
+import SignInDialog from "@/components/Auth/signin-dialog"
+import Footer from "@/components/Layout/footer"
+import { BubbleBackground } from "@/components/animate-ui/backgrounds/bubble"
+import HomePage from "@/templates/HomePage"
 
 export default function HomeClient() {
   const [open, setOpen] = useState(false)
+  const [showDashboard, setShowDashboard] = useState(false)
   const { data: session } = useSession()
-  const router = useRouter()
 
   const handleDashboardAccess = () => {
     if (session) {
-      router.push("/crm-dashboard")
+      setShowDashboard(true)
     } else {
       setOpen(true)
     }
   }
 
+  // If user clicked dashboard button and has session, show HomePage
+  if (showDashboard && session) {
+    return <HomePage />
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden">
+      <BubbleBackground className="fixed inset-0 z-0" />
       {/* Main Content Container */}
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12 md:px-8">
         

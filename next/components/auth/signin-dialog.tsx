@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/animate-ui/radix/dialog'
-import HolographicButton from '@/components/ui/holographic-button'
+import HolographicButton from '@/components/UI/holographic-button'
 
 interface SignInDialogProps {
   open: boolean;
@@ -23,7 +23,7 @@ export default function SignInDialog({ open, onOpenChange }: SignInDialogProps) 
   const handleSignIn = async () => {
     setLoading(true)
     try {
-      await signIn("azure-ad", { callbackUrl: "/crm-dashboard" })
+      await signIn("azure-ad", { callbackUrl: "/" })
     } catch (error) {
       console.error("Sign in error:", error)
     } finally {
