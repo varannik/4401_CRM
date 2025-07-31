@@ -84,7 +84,7 @@ const Header = ({
                 }`}
             >
                 <div
-                    className={`mr-3 gap-3 max-md:mr-auto ${
+                    className={`mr-3 gap-3 max-md:mr-auto flex items-start ${
                         hideSidebar ? "flex" : "hidden max-xl:flex"
                     }`}
                 >
