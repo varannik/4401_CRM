@@ -2,7 +2,7 @@ export const navigation = [
     {
         title: "Dashboard",
         icon: "dashboard",
-        href: "/",
+        href: "/dashboard",
     },
     {
         title: "Products",
