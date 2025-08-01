@@ -1,0 +1,53 @@
+CRM – 44.01 requirements and vision
+Core Functionality & Scope
+1.	Communication Context:
+a.	Should the system identify communications related to specific projects, contracts, or initiatives? It would be ideal (nice to have) to have the option to tag the company to a project
+b.	How do you coordinate when multiple team members interact with the same company? There would be one department assigned as primary 44.01 owner for the company.  All contacts between 44.01 and people at that company would be logged and visible in a company dashboard in our mini-CRM system that could be accessed by all 4401 users of the mini-CRM
+c.	Do you need to track which content or resources were shared in communications? No, for privacy purposes we don’t want to track the content of the communication. 
+
+2.	Lead Source & Attribution: 
+a.	How do you track original lead sources in ongoing relationship management?  We don’t need to track the lead source, but we do need to have a department assigned/allocated as the primary relationship owner for each company. We should be able to assign the lead manually. 
+b.	Should the system connect marketing campaign responses to ongoing sales communications? Not necessary
+3.	Business System Integration: Do you need integration with contract management, invoicing, or customer success systems? No
+4.	Email Integration: Which email platforms are you using (Office 365, Gmail, Exchange)? Do you need real-time sync or periodic batch updates? It should link to the 44.01 corporate email system and a daily batch update should be sufficient
+5.	User Base: How many users will access this CRM? Do you need role-based permissions (admin, read-only, department-specific access)? Probably between 5-20 regularly active users, but in essence it would be ideal of everyone could have access and maybe only the team leads have the ability to edit it. Likely three levels of access: consult/comment; limited admin rights for the department that owns the relationship, overall admin rights for IT/system owner.
+6.	Data Volume: Roughly how many contacts and emails are we talking about? This affects database design and performance considerations.  It’s hard to predict. Perhaps the digitalisation team can look at database design for some comparable companies?
+7.	Integration Requirements: Besides email, do you need integration with:
+a.	Calendar systems (for meeting tracking)? Ideally, if possible
+b.	Phone systems (for call logging)? No, but we need the ability to register this manually
+c.	Existing business tools?  Yes, Hubspot. We use Hubspot for sending marketing communications (e.g. the shareholder circular).
+
+AI Integration Specifics
+1.	AI Capabilities: What specific AI features are you envisioning?
+a.	Automatic contact categorization? I don’t understand, do you mean email vs meeting, or some other contact categorization? Not sure this is necessary.
+b.	Sentiment analysis of communications? No, for privacy purposes I don’t think we want to scan/analyse the content of the communication. 
+c.	Predictive insights about relationship strength? This is a privacy issue if it goes beyond just analysing # of contacts.
+d.	Auto-generating summaries of interactions? No, for privacy purposes I don’t think we want to scan/analyse the content of the communication.
+2.	Email Subject Analysis: Since you mentioned capturing email subjects - do you want AI to categorize these by topic, extract key themes, or identify project names automatically? Possibly, would need to check about privacy concerns. Not sure this is necessary.
+3.	Smart Suggestions: 
+a.	Would you like AI to suggest next actions, flag important contacts, or identify neglected relationships?   Prompts for people we haven’t contacted in a while would be helpful.
+b.	Should the system track meeting outcomes and next steps differently by meeting type? I don’t think so
+c.	Do you need to capture meeting preparation and follow-up communications? No, for privacy purposes I don’t think we want to scan/analyse the content of the communication.
+
+Data Privacy & Security
+1.	Privacy Boundaries: You mentioned not storing email content - are you comfortable with AI analyzing email subjects and metadata for insights?  Not sure this is necessary.
+2.	Data Retention: How long should historical data be kept? Any regulatory requirements? Let’s just make sure we’re GDPR compliant
+
+User Experience
+1.	Primary Use Cases: What are the main daily workflows? (searching contacts, logging interactions, generating reports?)  Consulting a dashboard for the company to see the 44.01 interaction with that company (or person). Possibly a prompt to consult the system when someone at 44.01 is emailing someone at a company  with whom we already have a relationship.
+2.	Mobile Access: Do users need mobile app access or is web-based sufficient? Web-based is sufficient, though mobile app access could be nice to have. 
+3.	Reporting Needs: What kind of reports or dashboards would be most valuable? (relationship health, contact frequency, department activity?) dashboard which allows 44.01 user to choose a company and see our interactions (who, frequency, topic, any comments) 
+
+Implementation Priority
+1.	MVP Features: Which features are absolutely critical for launch vs. nice-to-have for later phases? 
+Critical to have: 
+Database of past contacts searchable by company/name/email that shows a dashboard with a company-view dashboard that includes: 
+Company name, 44.01 department that owns the relationship, number of times contacted, first contact date, latest contact date, optional project tag, “Do not contact” flag, free form comment field, list of contacts in that company (name, email address, date of most recent contact, 44.01 person to most recently contact them)
+
+Nice-to-have: 
+Search by geography/country or topic/project, 
+Overview report of all the companies we interact with 
+
+2.	Timeline: What's your target timeline for development and deployment
+
+

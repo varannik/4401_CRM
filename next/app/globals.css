@@ -307,10 +307,10 @@
         background-size: 3px 100%;
     }
     .center {
-        @apply w-full mx-auto px-5 max-md:px-3;
+        @apply w-full max-w-none mx-auto px-5 max-md:px-3;
     }
     .center-with-sidebar {
-        @apply w-full mx-auto pr-5 max-xl:pl-5 max-md:px-3;
+        @apply w-full max-w-none mx-auto pr-5 max-xl:pl-5 max-md:px-3;
     }
     .col-right {
         @apply shrink-0 w-[30rem] max-3xl:w-[23rem] max-2xl:w-[21.5rem] max-[1349px]:w-[19.5rem] max-xl:w-[21.5rem] max-lg:w-full;

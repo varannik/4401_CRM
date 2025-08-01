@@ -1,5 +1,12 @@
 import Icon from "@/components/Icon";
-import { TabsOption } from "@/types/tabs";
+
+// Define the TabsOption type locally
+interface TabsOption {
+    id: string;
+    title: string;
+    name: string;
+    icon?: string;
+}
 
 type TabsProps = {
     className?: string;

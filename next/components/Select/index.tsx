@@ -7,7 +7,11 @@ import {
 } from "@headlessui/react";
 import Icon from "@/components/Icon";
 import Tooltip from "@/components/Tooltip";
-import { SelectOption } from "@/types/select";
+// Define the SelectOption type locally
+interface SelectOption {
+    id: number;
+    name: string;
+}
 
 type SelectProps = {
     className?: string;

@@ -5,111 +5,142 @@ export const navigation = [
         href: "/dashboard",
     },
     {
-        title: "Products",
-        icon: "product-think",
+        title: "Companies",
+        icon: "wallet",
         list: [
             {
                 title: "Overview",
-                href: "/products",
+                href: "/companies",
             },
             {
-                title: "Drafts",
-                href: "/products/drafts",
-                counter: 2,
+                title: "Company List",
+                href: "/companies/list",
             },
             {
-                title: "Released",
-                href: "/products/released",
-            },
-            {
-                title: "Comments",
-                href: "/products/comments",
-            },
-            {
-                title: "Scheduled",
-                href: "/products/scheduled",
-                counter: 8,
+                title: "Add Company",
+                href: "/companies/new",
             },
         ],
     },
     {
-        title: "Customers",
+        title: "Contacts",
         icon: "profile",
         list: [
             {
                 title: "Overview",
-                href: "/customers",
+                href: "/contacts",
             },
             {
-                title: "Customer list",
-                href: "/customers/customer-list",
+                title: "Contact List",
+                href: "/contacts/list",
+            },
+            {
+                title: "Add Contact",
+                href: "/contacts/new",
             },
         ],
     },
     {
-        title: "Shop",
-        icon: "wallet",
-        href: "/shop",
-    },
-    {
-        title: "Income",
-        icon: "income",
+        title: "Communications",
+        icon: "message",
         list: [
             {
-                title: "Earning",
-                href: "/income/earning",
+                title: "Recent Activity",
+                href: "/communications",
             },
             {
-                title: "Refunds",
-                href: "/income/refunds",
-                counter: 3,
+                title: "Log Communication",
+                href: "/communications/log",
             },
             {
-                title: "Payouts",
-                href: "/income/payouts",
+                title: "Email Tracking",
+                href: "/communications/emails",
             },
             {
-                title: "Statements",
-                href: "/income/statements",
+                title: "Meetings",
+                href: "/communications/meetings",
             },
         ],
     },
     {
-        title: "Promote",
-        icon: "promote",
-        href: "/promote",
+        title: "Reports",
+        icon: "chart",
+        list: [
+            {
+                title: "Relationship Health",
+                href: "/reports/relationships",
+            },
+            {
+                title: "Department Activity",
+                href: "/reports/departments",
+            },
+            {
+                title: "Communication Analytics",
+                href: "/reports/communications",
+            },
+            {
+                title: "Company Insights",
+                href: "/reports/companies",
+            },
+        ],
+    },
+    {
+        title: "Settings",
+        icon: "settings",
+        list: [
+            {
+                title: "Email Integration",
+                href: "/settings/email-integration",
+            },
+            {
+                title: "Departments",
+                href: "/settings/departments",
+            },
+            {
+                title: "Users",
+                href: "/settings/users",
+            },
+            {
+                title: "Projects",
+                href: "/settings/projects",
+            },
+            {
+                title: "Preferences",
+                href: "/settings/preferences",
+            },
+        ],
     },
 ];
 
 export const navigationUser = [
     {
-        title: "My shop",
-        icon: "bag",
-        href: "/shop",
-    },
-    {
-        title: "Edit profile",
+        title: "My Profile",
         icon: "edit-profile",
-        href: "/settings",
+        href: "/settings/profile",
     },
     {
-        title: "Analytics",
+        title: "My Department",
+        icon: "bag",
+        href: "/settings/departments",
+    },
+    {
+        title: "Recent Activity",
         icon: "chart",
-        href: "/customers",
+        href: "/communications",
     },
     {
-        title: "Affiliate center",
-        icon: "chain-think",
-        href: "/affiliate-center",
+        title: "Company Search",
+        icon: "search",
+        href: "/companies/search",
     },
     {
-        title: "Explore creators",
-        icon: "grid",
-        href: "/explore-creators",
+        title: "Quick Log",
+        icon: "message",
+        href: "/communications/log",
     },
     {
-        title: "Upgrade to Pro",
-        icon: "star-fill",
-        href: "/upgrade-to-pro",
+        title: "Help & Support",
+        icon: "help",
+        href: "/help",
     },
 ];
