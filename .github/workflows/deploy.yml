@@ -1,0 +1,341 @@
+name: Deploy CRM Application
+
+on:
+  push:
+    branches:
+      - main      # Production deployment
+      - develop   # Staging deployment
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  NODE_VERSION: '18'
+  AWS_REGION: 'us-west-2'
+
+jobs:
+  # Test and Build Job
+  test-and-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./next
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ./next/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript check
+        run: npx tsc --noEmit
+
+      - name: Run linting
+        run: npm run lint
+
+      - name: Run tests (if available)
+        run: npm test --if-present
+        continue-on-error: true
+
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # Infrastructure Deployment Job
+  deploy-infrastructure:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    environment: 
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    
+    defaults:
+      run:
+        working-directory: ./infrastructure
+    
+    outputs:
+      environment: ${{ steps.set-env.outputs.environment }}
+      database-endpoint: ${{ steps.deploy.outputs.database-endpoint }}
+      service-url: ${{ steps.deploy.outputs.service-url }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set environment
+        id: set-env
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "environment=production" >> $GITHUB_OUTPUT
+          else
+            echo "environment=staging" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ./infrastructure/package-lock.json
+
+      - name: Install CDK dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install AWS CDK
+        run: npm install -g aws-cdk
+
+      - name: CDK Bootstrap (if needed)
+        run: cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
+
+      - name: CDK Synth
+        run: cdk synth --context environment=${{ steps.set-env.outputs.environment }}
+
+      - name: CDK Deploy
+        id: deploy
+        run: |
+          cdk deploy --all --require-approval never \
+            --context environment=${{ steps.set-env.outputs.environment }} \
+            --outputs-file outputs.json
+          
+          # Extract outputs for next jobs
+          if [ -f outputs.json ]; then
+            echo "database-endpoint=$(jq -r '.[] | .DatabaseEndpoint // empty' outputs.json)" >> $GITHUB_OUTPUT
+            echo "service-url=$(jq -r '.[] | .AppRunnerServiceUrl // empty' outputs.json)" >> $GITHUB_OUTPUT
+            AZURE_SECRET_ARN=$(jq -r '.[] | .AzureAdSecretArn // empty' outputs.json)
+            echo "azure-secret-arn=$AZURE_SECRET_ARN" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Azure AD Secret
+        run: |
+          AZURE_SECRET_ARN="${{ steps.deploy.outputs.azure-secret-arn }}"
+          if [ -n "$AZURE_SECRET_ARN" ]; then
+            echo "Updating Azure AD secret with GitHub secrets..."
+            aws secretsmanager update-secret \
+              --secret-id "$AZURE_SECRET_ARN" \
+              --secret-string "{\"AZURE_AD_CLIENT_ID\":\"${{ secrets.AZURE_AD_CLIENT_ID }}\",\"AZURE_AD_CLIENT_SECRET\":\"${{ secrets.AZURE_AD_CLIENT_SECRET }}\",\"AZURE_AD_TENANT_ID\":\"${{ secrets.AZURE_AD_TENANT_ID }}\"}"
+          fi
+
+  # Docker Build and Push Job
+  build-and-push:
+    needs: [deploy-infrastructure]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    environment: 
+      name: ${{ needs.deploy-infrastructure.outputs.environment }}
+    
+    defaults:
+      run:
+        working-directory: ./next
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR repository URI
+        id: get-ecr
+        run: |
+          # Extract ECR URI from CDK outputs
+          ECR_URI=$(aws cloudformation describe-stacks \
+            --stack-name "crm-apprunner-${{ needs.deploy-infrastructure.outputs.environment }}" \
+            --query "Stacks[0].Outputs[?OutputKey=='EcrRepositoryUri'].OutputValue" \
+            --output text)
+          echo "ecr-uri=$ECR_URI" >> $GITHUB_OUTPUT
+
+      - name: Build, tag, and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_URI: ${{ steps.get-ecr.outputs.ecr-uri }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          # Build image
+          docker build -t $ECR_REPOSITORY_URI:$IMAGE_TAG .
+          docker tag $ECR_REPOSITORY_URI:$IMAGE_TAG $ECR_REPOSITORY_URI:latest
+          
+          # Push image
+          docker push $ECR_REPOSITORY_URI:$IMAGE_TAG
+          docker push $ECR_REPOSITORY_URI:latest
+          
+          echo "Image pushed: $ECR_REPOSITORY_URI:$IMAGE_TAG"
+
+      - name: Update App Runner service
+        run: |
+          # Force App Runner to deploy the new image
+          SERVICE_ARN=$(aws cloudformation describe-stacks \
+            --stack-name "crm-apprunner-${{ needs.deploy-infrastructure.outputs.environment }}" \
+            --query "Stacks[0].Outputs[?OutputKey=='ServiceArn'].OutputValue" \
+            --output text)
+          
+          if [ -n "$SERVICE_ARN" ]; then
+            echo "Triggering App Runner deployment..."
+            aws apprunner start-deployment --service-arn "$SERVICE_ARN"
+          fi
+
+      - name: Save deployment outputs
+        uses: actions/upload-artifact@v3
+        with:
+          name: deployment-outputs-${{ steps.set-env.outputs.environment }}
+          path: infrastructure/outputs.json
+
+  # Database Migration Job
+  database-migration:
+    needs: [deploy-infrastructure, build-and-push]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    environment: 
+      name: ${{ needs.deploy-infrastructure.outputs.environment }}
+    
+    defaults:
+      run:
+        working-directory: ./next
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: ./next/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # If using Prisma for database management
+      - name: Run database migrations
+        run: |
+          echo "Setting up database connection..."
+          # Get database credentials from AWS Secrets Manager
+          aws secretsmanager get-secret-value \
+            --secret-id "crm-db-${{ needs.deploy-infrastructure.outputs.environment }}" \
+            --query SecretString --output text > db-secret.json
+          
+          # Set up DATABASE_URL for migrations
+          export DATABASE_URL="postgresql://$(jq -r .username db-secret.json):$(jq -r .password db-secret.json)@${{ needs.deploy-infrastructure.outputs.database-endpoint }}:5432/crmdb"
+          
+          # Run migrations if Prisma is set up
+          if [ -f "prisma/schema.prisma" ]; then
+            npx prisma migrate deploy
+          else
+            echo "No Prisma migrations found, skipping..."
+          fi
+          
+          # Clean up
+          rm -f db-secret.json
+
+  # Post-deployment Tests
+  post-deployment-tests:
+    needs: [deploy-infrastructure, database-migration]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for service to be ready
+        run: |
+          echo "Waiting for App Runner service to be ready..."
+          sleep 60  # Give App Runner time to deploy
+
+      - name: Health check
+        run: |
+          SERVICE_URL="${{ needs.deploy-infrastructure.outputs.service-url }}"
+          if [ -n "$SERVICE_URL" ]; then
+            for i in {1..10}; do
+              if curl -f "$SERVICE_URL/api/health"; then
+                echo "Health check passed!"
+                exit 0
+              fi
+              echo "Attempt $i failed, retrying in 30 seconds..."
+              sleep 30
+            done
+            echo "Health check failed after 10 attempts"
+            exit 1
+          else
+            echo "Service URL not available"
+            exit 1
+          fi
+
+      # Optional: Run E2E tests
+      - name: Run E2E tests
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Running E2E tests..."
+          # Add your E2E test commands here
+          # Example: npx playwright test
+
+  # Notification Job
+  notify:
+    needs: [test-and-build, deploy-infrastructure, build-and-push, database-migration, post-deployment-tests]
+    runs-on: ubuntu-latest
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: Notify deployment status
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          custom_payload: |
+            {
+              attachments: [{
+                color: '${{ job.status }}' === 'success' ? 'good' : 'danger',
+                title: 'CRM Deployment ${{ job.status }}',
+                fields: [{
+                  title: 'Environment',
+                  value: '${{ needs.deploy-infrastructure.outputs.environment }}',
+                  short: true
+                }, {
+                  title: 'Branch',
+                  value: '${{ github.ref_name }}',
+                  short: true
+                }, {
+                  title: 'Service URL',
+                  value: '${{ needs.deploy-infrastructure.outputs.service-url }}',
+                  short: false
+                }]
+              }]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        if: always() && env.SLACK_WEBHOOK_URL != '' 

@@ -75,7 +75,7 @@ const Header = ({
             } ${className || ""}`}
         >
             <div
-                className={`flex items-center h-22 max-md:h-18 ${
+                className={`flex items-center h-22 max-md:h-18 max-md:px-3 ${
                     hideSidebar ? "center max-w-full" : "center-with-sidebar"
                 } ${
                     newProduct
@@ -84,28 +84,28 @@ const Header = ({
                 }`}
             >
                 <div
-                    className={`mr-3 gap-3 max-md:mr-auto flex items-start ${
+                    className={`flex items-center gap-3 max-md:flex-shrink-0 ${
                         hideSidebar ? "flex" : "hidden max-xl:flex"
                     }`}
                 >
                     <Logo />
                     <Button
-                        className="flex-col gap-[4.5px] shrink-0 before:w-4.5 before:h-[1.5px] before:rounded-full before:bg-t-secondary before:transition-colors after:w-4.5 after:h-[1.5px] after:rounded-full after:bg-t-secondary after:transition-colors hover:before:bg-t-primary hover:after:bg-t-primary"
+                        className="flex-col gap-[4.5px] shrink-0 max-md:w-11 max-md:h-11 before:w-4.5 before:h-[1.5px] before:rounded-full before:bg-t-secondary before:transition-colors after:w-4.5 after:h-[1.5px] after:rounded-full after:bg-t-secondary after:transition-colors hover:before:bg-t-primary hover:after:bg-t-primary"
                         onClick={onToggleSidebar}
                         isCircle
                         isWhite
                     />
                 </div>
                 {title && (
-                    <div className="mr-auto text-h4 max-lg:text-h5 max-md:hidden">
+                    <div className="mr-auto text-h4 max-lg:text-h5 max-md:flex-1 max-md:text-center max-md:text-h6 max-md:mr-0">
                         {title}
                     </div>
                 )}
                 <div
-                    className={`flex items-center gap-3 ${
+                    className={`flex items-center gap-3 max-md:ml-auto max-md:flex-shrink-0 ${
                         newProduct ? "hidden max-md:flex" : ""
                     } ${
-                        hideSidebar ? "grow max-lg:grow-0 max-lg:ml-auto" : ""
+                        hideSidebar ? "grow max-lg:grow-0 max-lg:ml-auto" : "ml-auto max-xl:ml-0"
                     }`}
                 >
                     {!newProduct && (

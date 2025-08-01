@@ -34,7 +34,7 @@ export default function ZustandProvider({ children }: ZustandProviderProps) {
       }
       
       setUser(user)
-      setTokens(session.accessToken, session.idToken)
+      setTokens(session.accessToken, session.accessToken)
     } else {
       logout()
     }

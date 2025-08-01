@@ -6,10 +6,19 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-cloudwatch": "^3.450.0",
     "@headlessui/react": "^2.2.7",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
+    "@prisma/client": "^5.7.1",
     "@tiptap/extension-link": "^2.11.5",
     "@tiptap/extension-text-align": "^2.11.5",
     "@tiptap/extension-underline": "^2.11.5",
@@ -60,6 +69,7 @@
     "@types/react-tagsinput": "^3.20.6",
     "eslint": "^9",
     "eslint-config-next": "15.2.0",
+    "prisma": "^5.7.1",
     "tailwind-scrollbar": "^4.0.1",
     "tailwindcss": "^4",
     "tw-animate-css": "^1.3.5",

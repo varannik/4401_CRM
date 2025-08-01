@@ -1,33 +1,26 @@
 "use client";
 
 import Layout from "@/components/Layout";
-import PopularProducts from "@/components/PopularProducts";
-import RefundRequests from "@/components/RefundRequests";
 import Overview from "./Overview";
-import ProductView from "./ProductView";
-import OverviewSlider from "./OverviewSlider";
-import GetMoreCustomers from "./GetMoreCustomers";
-import Comments from "./Comments";
-
-import { popularProducts } from "@/mocks/products";
+import RecentActivity from "./RecentActivity";
+import CompanyInsights from "./CompanyInsights";
+import CommunicationAlerts from "./CommunicationAlerts";
+import DepartmentActivity from "./DepartmentActivity";
+import QuickActions from "./QuickActions";
 
 const HomePage = () => {
     return (
-        <Layout title="Dashboard">
+        <Layout title="CRM Dashboard">
             <div className="flex max-lg:block">
                 <div className="col-left">
                     <Overview />
-                    <ProductView />
-                    <OverviewSlider />
-                    <GetMoreCustomers />
+                    <RecentActivity />
+                    <CompanyInsights />
+                    <QuickActions />
                 </div>
                 <div className="col-right">
-                    <PopularProducts
-                        title="Popular products"
-                        items={popularProducts}
-                    />
-                    <Comments />
-                    <RefundRequests />
+                    <CommunicationAlerts />
+                    <DepartmentActivity />
                 </div>
             </div>
         </Layout>

@@ -1,0 +1,202 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User management
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  name        String?
+  image       String?
+  role        UserRole @default(USER)
+  departmentId String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  department    Department?     @relation(fields: [departmentId], references: [id])
+  communications Communication[]
+  
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// CRM Core Entities
+model Department {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  users       User[]
+  companies   Company[]
+  
+  @@map("departments")
+}
+
+model Company {
+  id              String    @id @default(cuid())
+  name            String
+  industry        String?
+  location        String?
+  country         String?
+  website         String?
+  description     String?
+  
+  // CRM specific fields
+  ownerDepartmentId String?
+  projectTag      String?
+  doNotContact    Boolean   @default(false)
+  notes           String?
+  
+  firstContactDate DateTime?
+  lastContactDate  DateTime?
+  contactCount     Int       @default(0)
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relations
+  ownerDepartment Department?     @relation(fields: [ownerDepartmentId], references: [id])
+  contacts        Contact[]
+  communications  Communication[]
+  
+  @@map("companies")
+}
+
+model Contact {
+  id            String  @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String
+  phone         String?
+  title         String?
+  department    String?
+  
+  // CRM specific fields
+  isActive      Boolean @default(true)
+  notes         String?
+  
+  lastContactDate  DateTime?
+  contactCount     Int       @default(0)
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relations
+  companyId     String
+  company       Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  communications Communication[]
+  
+  @@unique([email, companyId])
+  @@map("contacts")
+}
+
+model Communication {
+  id             String            @id @default(cuid())
+  type           CommunicationType
+  subject        String?
+  notes          String?
+  metadata       Json?             // Store email metadata, meeting details, etc.
+  
+  communicationDate DateTime
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  
+  // Relations
+  companyId      String
+  company        Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  contactId      String?
+  contact        Contact? @relation(fields: [contactId], references: [id])
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  
+  @@map("communications")
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  status      ProjectStatus @default(ACTIVE)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("projects")
+}
+
+// Enums
+enum UserRole {
+  USER          // Consult/comment level
+  ADMIN         // Limited admin rights for department
+  SUPER_ADMIN   // Overall admin rights for IT/system owner
+}
+
+enum CommunicationType {
+  EMAIL
+  MEETING
+  PHONE
+  VIDEO_CALL
+  IN_PERSON
+  OTHER
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ON_HOLD
+  CANCELLED
+} 
