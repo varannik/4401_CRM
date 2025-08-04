@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
       try {
         console.log('Step 2: Creating Graph client...');
         const { createGraphClient } = await import('@/lib/microsoft-graph');
-        graphClient = await createGraphClient();
+        graphClient = await createGraphClient(false); // Don't require email permissions for basic test
         diagnosticResults.steps.push({
           step: 'Graph Client Creation',
           success: true,
@@ -142,7 +142,7 @@ export async function GET(request: NextRequest) {
       try {
         const { createGraphClient } = await import('@/lib/microsoft-graph');
         const clientStart = Date.now();
-        const graphClient = await createGraphClient();
+        const graphClient = await createGraphClient(false); // Don't require email permissions for quick test
         const clientDuration = Date.now() - clientStart;
         
         // Test minimal API call first

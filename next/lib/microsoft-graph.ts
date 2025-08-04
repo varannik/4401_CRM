@@ -4,7 +4,7 @@ import { authOptions } from './auth';
 import { ExchangeOptimizer } from './exchange-optimization';
 
 // Microsoft Graph API client using session token with timeout
-export async function createGraphClient() {
+export async function createGraphClient(requireEmailPermissions: boolean = false) {
   try {
     // Add timeout to session retrieval
     const sessionPromise = getServerSession(authOptions);
@@ -18,14 +18,16 @@ export async function createGraphClient() {
       throw new Error('No access token available. Please sign in.');
     }
     
-    // Check if token has email permissions
-    const scopes = session.scope?.split(' ') || [];
-    const hasEmailAccess = scopes.some((scope: string) => 
-      scope.includes('Mail.Read') || scope.includes('Mail.ReadBasic')
-    );
-    
-    if (!hasEmailAccess) {
-      throw new Error('Email permissions not granted. Please re-authenticate with email permissions.');
+    // Only check email permissions if explicitly required
+    if (requireEmailPermissions) {
+      const scopes = session.scope?.split(' ') || [];
+      const hasEmailAccess = scopes.some((scope: string) => 
+        scope.includes('Mail.Read') || scope.includes('Mail.ReadBasic')
+      );
+      
+      if (!hasEmailAccess) {
+        throw new Error('Email permissions not granted. Please re-authenticate with email permissions.');
+      }
     }
     
     return Client.init({
@@ -109,7 +111,7 @@ export async function fetchEmailMetadata(options?: {
   orderBy?: string;
   daysBack?: number;
 }): Promise<EmailMetadata[]> {
-  const graphClient = await createGraphClient();
+  const graphClient = await createGraphClient(true); // Require email permissions
   const config = ExchangeOptimizer.getBatchProcessingConfig();
   
   const {
@@ -184,7 +186,7 @@ export async function fetchMeetingMetadata(options?: {
   filter?: string;
   daysBack?: number;
 }): Promise<MeetingMetadata[]> {
-  const graphClient = await createGraphClient();
+  const graphClient = await createGraphClient(true); // Require calendar permissions
   const config = ExchangeOptimizer.getBatchProcessingConfig();
   
   const {
@@ -381,14 +383,13 @@ export async function testExchangeConnection(): Promise<{
   errors: string[];
 }> {
   try {
-    const graphClient = await createGraphClient();
     const results = {
       success: false,
       permissions: [] as string[],
       errors: [] as string[]
     };
     
-    // Test basic profile access
+    // Test basic profile access (no email permissions required)
     try {
       const profile = await getUserProfile();
       results.permissions.push('User.Read ✅');
@@ -397,8 +398,9 @@ export async function testExchangeConnection(): Promise<{
       results.errors.push('Profile access failed');
     }
     
-    // Test email access
+    // Test email access (requires email permissions)
     try {
+      const graphClient = await createGraphClient(true); // Require email permissions for this test
       const emailTestPromise = graphClient
         .api('/me/messages')
         .select('id')
@@ -416,8 +418,9 @@ export async function testExchangeConnection(): Promise<{
       results.errors.push('Email access failed - check Mail.Read permission');
     }
     
-    // Test calendar access  
+    // Test calendar access (requires calendar permissions)
     try {
+      const graphClient = await createGraphClient(true); // Require calendar permissions for this test
       const calendarTestPromise = graphClient
         .api('/me/events')
         .select('id')
@@ -492,7 +495,7 @@ export async function debugExchangeConnection(): Promise<{
     stepStart = Date.now();
     console.log('🔍 Step 3: Testing Graph client creation...');
     try {
-      const graphClient = await createGraphClient();
+      const graphClient = await createGraphClient(); // Basic client without email requirements
       steps.push({
         step: 'Graph Client Creation',
         success: true,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
     Menu,
     MenuButton,
@@ -13,32 +14,106 @@ import Icon from "@/components/Icon";
 import Modal from "@/components/Modal";
 import Login from "@/components/Login";
 import { navigationUser } from "@/contstants/navigation";
+import { useAuthStore } from "@/stores/auth-store";
 
 const User = ({}) => {
     const [isOpen, setIsOpen] = useState(false);
     const pathname = usePathname();
+    const { user, isAuthenticated, isLoading } = useAuthStore();
+    
     const isActive = (href: string) => pathname === href;
+
+    const handleLogout = async () => {
+        await signOut({ redirect: true, callbackUrl: "/" });
+    };
+
+    // Show loading state while checking authentication
+    if (isLoading) {
+        return (
+            <div className="w-12 h-12 rounded-full bg-b-surface2 animate-pulse" />
+        );
+    }
+
+    // Show login button if not authenticated
+    if (!isAuthenticated || !user) {
+        return (
+            <>
+                <button
+                    onClick={() => setIsOpen(true)}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-t-secondary hover:text-t-primary transition-colors"
+                >
+                    <Icon name="user" className="w-5 h-5" />
+                    Sign In
+                </button>
+                <Modal
+                    classWrapper="!max-w-120 p-16 bg-b-surface2"
+                    open={isOpen}
+                    onClose={() => setIsOpen(false)}
+                >
+                    <Login />
+                </Modal>
+            </>
+        );
+    }
 
     return (
         <>
             <Menu className="group" as="div">
                 <div className="fixed inset-0 z-30 bg-b-surface1/70 invisible opacity-0 transition-all group-[[data-open]]:visible group-[[data-open]]:opacity-100"></div>
-                <MenuButton className="relative z-40 w-12 h-12 rounded-full overflow-hidden transition-colors after:absolute after:inset-[0.09375rem] after:border-[0.15625rem] after:border-b-surface2 after:rounded-full data-[hover]:bg-primary-01 data-[active]:bg-primary-01">
-                    <Image
-                        className="size-10 rounded-full object-cover opacity-100"
-                        src="/images/avatar-sm.png"
-                        width={40}
-                        height={40}
-                        alt="avatar"
-                        priority={true}
-                        quality={100}
-                    />
+                <MenuButton className="relative z-40 w-12 h-12  rounded-full overflow-hidden transition-colors after:absolute after:inset-[0.09375rem] after:border-[0.15625rem] after:border-b-surface2 after:rounded-full data-[hover]:bg-primary-01 data-[active]:bg-primary-01">
+                    {user.image ? (
+                        <Image
+                            className="size-10 rounded-full object-cover opacity-100"
+                            src={user.image}
+                            width={40}
+                            height={40}
+                            alt={user.name || "User avatar"}
+                            priority={true}
+                            quality={100}
+                        />
+                    ) : (
+                        <div className="ml-1 w-10 h-10 rounded-full bg-primary-01 flex items-center justify-center text-white font-medium">
+                            {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+                        </div>
+                    )}
                 </MenuButton>
                 <MenuItems
                     className="z-100 w-67.5 p-3 rounded-4xl bg-b-surface2 border-1 border-s-subtle outline-none shadow-dropdown [--anchor-gap:0.625rem] [--anchor-offset:0.625rem] origin-top transition duration-300 ease-out data-[closed]:scale-95 data-[closed]:opacity-0 max-md:w-[calc(100vw-1.5rem)] max-md:[--anchor-offset:0]"
                     anchor="bottom end"
                     transition
                 >
+                    {/* User Info Section */}
+                    <div className="px-3 py-4 border-b border-s-subtle mb-3">
+                        <div className="flex items-center gap-3">
+                            {user.image ? (
+                                <Image
+                                    className="w-10 h-10 rounded-full object-cover"
+                                    src={user.image}
+                                    width={40}
+                                    height={40}
+                                    alt={user.name || "User avatar"}
+                                />
+                            ) : (
+                                <div className="w-10 h-10 rounded-full bg-primary-01 flex items-center justify-center text-white font-medium">
+                                    {user.name?.charAt(0)?.toUpperCase() || user.email?.charAt(0)?.toUpperCase() || "U"}
+                                </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                                {user.name && (
+                                    <p className="text-sm font-medium text-t-primary truncate">
+                                        {user.name}
+                                    </p>
+                                )}
+                                {user.email && (
+                                    <p className="text-xs text-t-secondary truncate">
+                                        {user.email}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Navigation Items */}
                     {navigationUser.map((link, index) => (
                         <MenuItem key={index}>
                             <Link
@@ -73,7 +148,7 @@ const User = ({}) => {
                     <MenuItem>
                         <button
                             className="group/item flex items-center w-full h-12 px-3 text-button text-t-secondary transition-colors data-[focus]:text-t-primary"
-                            onClick={() => setIsOpen(true)}
+                            onClick={handleLogout}
                         >
                             <Icon
                                 className="mr-4 fill-t-secondary transition-colors group-[[data-focus]]/item:fill-t-primary"
@@ -84,13 +159,6 @@ const User = ({}) => {
                     </MenuItem>
                 </MenuItems>
             </Menu>
-            <Modal
-                classWrapper="!max-w-120 p-16 bg-b-surface2"
-                open={isOpen}
-                onClose={() => setIsOpen(false)}
-            >
-                <Login />
-            </Modal>
         </>
     );
 };
