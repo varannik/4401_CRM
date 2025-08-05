@@ -1,0 +1,71 @@
+name: Manual Deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+        - staging
+        - production
+      version:
+        description: 'Version/tag to deploy'
+        required: false
+        default: 'latest'
+      skip_tests:
+        description: 'Skip CI tests'
+        type: boolean
+        default: false
+      migrate_database:
+        description: 'Run database migrations'
+        type: boolean
+        default: true
+
+jobs:
+  manual-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Validate inputs
+      run: |
+        echo "🚀 Manual deployment requested"
+        echo "Environment: ${{ inputs.environment }}"
+        echo "Version: ${{ inputs.version }}"
+        echo "Skip tests: ${{ inputs.skip_tests }}"
+        echo "Run migrations: ${{ inputs.migrate_database }}"
+
+    - name: Trigger staging deployment
+      if: ${{ inputs.environment == 'staging' }}
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'cd-staging.yml',
+            ref: 'develop'
+          });
+
+    - name: Trigger production deployment
+      if: ${{ inputs.environment == 'production' }}
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.actions.createWorkflowDispatch({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            workflow_id: 'cd-production.yml',
+            ref: 'main',
+            inputs: {
+              version: '${{ inputs.version }}',
+              skip_tests: '${{ inputs.skip_tests }}'
+            }
+          });
+
+    - name: Deployment triggered
+      run: |
+        echo "✅ Deployment to ${{ inputs.environment }} has been triggered"
+        echo "Check the Actions tab for progress"
