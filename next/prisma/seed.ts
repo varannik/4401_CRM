@@ -5,18 +5,31 @@ const prisma = new PrismaClient()
 async function main() {
   console.log('🌱 Starting database seed...')
 
-  // Create admin user
+  // Create admin user (reza@4401.earth)
   const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@example.com' },
+    where: { email: 'reza@4401.earth' },
     update: {},
     create: {
-      email: 'admin@example.com',
-      name: 'Admin User',
-      role: 'ADMIN',
+      email: 'reza@4401.earth',
+      name: 'Reza Admin',
+      role: 'sys_admin',
     },
   })
 
   console.log('✅ Created admin user:', adminUser.email)
+
+  // Create example admin user for development
+  const exampleAdmin = await prisma.user.upsert({
+    where: { email: 'admin@example.com' },
+    update: {},
+    create: {
+      email: 'admin@example.com',
+      name: 'Example Admin',
+      role: 'sys_admin',
+    },
+  })
+
+  console.log('✅ Created example admin user:', exampleAdmin.email)
 
   // Create sample customers
   const customers = await Promise.all([

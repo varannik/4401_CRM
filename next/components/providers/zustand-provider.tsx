@@ -31,6 +31,8 @@ export default function ZustandProvider({ children }: ZustandProviderProps) {
         name: session.user.name,
         email: session.user.email,
         image: session.user.image,
+        role: session.user.role,
+        departmentId: session.user.departmentId,
       }
       
       setUser(user)

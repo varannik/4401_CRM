@@ -1,5 +1,8 @@
 import { NextAuthOptions } from "next-auth"
 import AzureADProvider from "next-auth/providers/azure-ad"
+import { PrismaClient } from "@prisma/client"
+
+const prisma = new PrismaClient()
 
 // Extend the built-in session types
 declare module "next-auth" {
@@ -14,6 +17,8 @@ declare module "next-auth" {
       name?: string | null
       email?: string | null
       image?: string | null
+      role?: string | null
+      departmentId?: string | null
     }
   }
 }
@@ -25,6 +30,8 @@ declare module "next-auth/jwt" {
     scope?: string
     expiresAt?: number
     userId?: string
+    role?: string
+    departmentId?: string
   }
 }
 
@@ -58,6 +65,34 @@ export const authOptions: NextAuthOptions = {
         token.expiresAt = account.expires_at
         token.scope = account.scope
         token.userId = user.id
+
+        // Fetch user role and department from database
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: user.email || '' },
+            include: { department: true }
+          })
+          
+          if (dbUser) {
+            token.role = dbUser.role
+            token.departmentId = dbUser.departmentId
+          } else {
+            // Create new user with default consultant role
+            const newUser = await prisma.user.create({
+              data: {
+                email: user.email || '',
+                name: user.name,
+                image: user.image,
+                role: 'consultant'
+              }
+            })
+            token.role = newUser.role
+            token.departmentId = newUser.departmentId
+          }
+        } catch (error) {
+          console.error('Failed to fetch/create user from database:', error)
+          token.role = 'consultant' // Default role
+        }
       }
 
       // Check if token needs refresh (15 minutes before expiry)
@@ -90,9 +125,11 @@ export const authOptions: NextAuthOptions = {
       session.refreshToken = token.refreshToken as string
       session.scope = token.scope as string
       
-      // Ensure user.id is set
+      // Ensure user.id is set and add role information
       if (session.user && token.sub) {
         session.user.id = token.sub
+        session.user.role = token.role as string
+        session.user.departmentId = token.departmentId as string
       }
       
       // Handle token refresh errors
@@ -100,7 +137,7 @@ export const authOptions: NextAuthOptions = {
         session.error = token.error as string
       }
       
-      console.log('Session callback - user ID:', session.userId)
+      console.log('Session callback - user ID:', session.userId, 'role:', token.role)
       return session
     },
     async signIn({ user, account }) {
