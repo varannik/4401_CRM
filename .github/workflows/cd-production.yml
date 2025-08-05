@@ -41,7 +41,7 @@ jobs:
         cache-dependency-path: '4401_CRM/next/package-lock.json'
 
     - name: Install dependencies
-      run: npm ci
+      run: npm ci --legacy-peer-deps
 
     - name: Run production build test
       run: npm run build
@@ -278,7 +278,7 @@ jobs:
       working-directory: ./4401_CRM/next
       run: |
         # Install dependencies
-        npm ci
+        npm ci --legacy-peer-deps
         
         # Get database connection string from Key Vault
         DB_CONNECTION=$(az keyvault secret show \
