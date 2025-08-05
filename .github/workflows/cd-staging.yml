@@ -124,7 +124,7 @@ jobs:
           --query value -o tsv)
         
         # Install dependencies for migration
-        npm ci
+        npm ci --legacy-peer-deps
         
         # Run Prisma migrations
         DATABASE_URL="$DB_CONNECTION" npx prisma migrate deploy
