@@ -1,0 +1,84 @@
+# Example Terraform variables file for CRM Azure deployment
+# Copy this file to terraform.tfvars and update with your values
+
+# Environment Configuration
+environment = "dev"
+location    = "East US 2"
+owner       = "CRM-Team"
+
+# Network Configuration
+vnet_address_space              = ["10.0.0.0/16"]
+container_apps_subnet_address   = ["10.0.1.0/24"]
+database_subnet_address         = ["10.0.2.0/24"]
+redis_subnet_address           = ["10.0.3.0/24"]
+
+# Container Registry Configuration
+container_registry_sku = "Basic"  # Basic, Standard, Premium
+
+# Database Configuration
+db_admin_username               = "crmadmin"
+db_admin_password              = "YourSecurePassword123!"  # Change this!
+database_name                  = "crmdb"
+database_sku_name             = "B_Standard_B1ms"  # Burstable tier for dev
+database_storage_mb           = 32768  # 32 GB
+database_backup_retention_days = 7
+
+# Redis Configuration
+redis_capacity = 0      # 250 MB for Basic C0
+redis_family   = "C"    # C for Basic/Standard, P for Premium
+redis_sku_name = "Basic"
+
+# Container Apps Configuration
+container_image    = "crm-app:latest"
+container_port     = 3000
+min_replicas      = 0    # Scale to zero for cost savings in dev
+max_replicas      = 5    # Lower limit for dev environment
+cpu_requests      = "0.25"
+memory_requests   = "0.5Gi"
+
+# Application Secrets (REQUIRED - Update these values!)
+azure_ad_client_id     = "your-azure-ad-client-id"
+azure_ad_client_secret = "your-azure-ad-client-secret"
+azure_ad_tenant_id     = "your-azure-ad-tenant-id"
+nextauth_secret        = "your-nextauth-secret-key-at-least-32-chars"
+email_webhook_secret   = "your-email-webhook-secret"  # Optional
+
+# Front Door Configuration
+custom_domain = ""  # Leave empty for default Azure domain, or specify your custom domain
+
+# Environment-specific overrides (optional)
+environment_config = {
+  # Override defaults for specific environments
+  # database_sku_name     = "GP_Standard_D2s_v3"  # Higher tier for production
+  # redis_sku_name        = "Standard"            # Standard tier for production
+  # min_replicas          = 2                     # Always running for production
+  # backup_retention_days = 30                    # Longer retention for production
+}
+
+# Example configurations for different environments:
+
+# Development Environment (cost-optimized)
+# environment_config = {
+#   database_sku_name = "B_Standard_B1ms"
+#   redis_sku_name    = "Basic"
+#   min_replicas      = 0
+#   max_replicas      = 3
+# }
+
+# Staging Environment (production-like but smaller)
+# environment_config = {
+#   database_sku_name = "GP_Standard_D2s_v3"
+#   redis_sku_name    = "Standard"
+#   min_replicas      = 1
+#   max_replicas      = 5
+# }
+
+# Production Environment (high availability)
+# environment_config = {
+#   database_sku_name     = "GP_Standard_D4s_v3"
+#   redis_sku_name        = "Standard"
+#   redis_capacity        = 1
+#   min_replicas          = 2
+#   max_replicas          = 20
+#   backup_retention_days = 30
+# }

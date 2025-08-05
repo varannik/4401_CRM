@@ -1,0 +1,262 @@
+{
+  "lenses": {
+    "0": {
+      "order": 0,
+      "parts": {
+        "0": {
+          "position": {
+            "x": 0,
+            "y": 0,
+            "colSpan": 6,
+            "rowSpan": 4
+          },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "resourceTypeMode",
+                "isOptional": true
+              },
+              {
+                "name": "ComponentId",
+                "value": {
+                  "Name": "${application_insights_id}",
+                  "SubscriptionId": "${subscription_id}",
+                  "ResourceGroup": "${resource_group_name}"
+                },
+                "isOptional": true
+              }
+            ],
+            "type": "Extension/AppInsightsExtension/PartType/AppMapGalPt",
+            "settings": {
+              "content": {
+                "title": "Application Map"
+              }
+            }
+          }
+        },
+        "1": {
+          "position": {
+            "x": 6,
+            "y": 0,
+            "colSpan": 6,
+            "rowSpan": 4
+          },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "resourceTypeMode",
+                "isOptional": true
+              },
+              {
+                "name": "ComponentId",
+                "value": {
+                  "Name": "${application_insights_id}",
+                  "SubscriptionId": "${subscription_id}",
+                  "ResourceGroup": "${resource_group_name}"
+                },
+                "isOptional": true
+              }
+            ],
+            "type": "Extension/AppInsightsExtension/PartType/AvailabilityTimelineGalPt",
+            "settings": {
+              "content": {
+                "title": "Availability Timeline"
+              }
+            }
+          }
+        },
+        "2": {
+          "position": {
+            "x": 0,
+            "y": 4,
+            "colSpan": 4,
+            "rowSpan": 3
+          },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "resourceIds",
+                "value": ["${container_app_id}"]
+              }
+            ],
+            "type": "Extension/HubsExtension/PartType/MonitorChartPart",
+            "settings": {
+              "content": {
+                "title": "Container App CPU Usage",
+                "metrics": [
+                  {
+                    "resourceMetadata": {
+                      "id": "${container_app_id}"
+                    },
+                    "name": "CpuPercentage",
+                    "aggregationType": 4,
+                    "namespace": "Microsoft.App/containerApps"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "3": {
+          "position": {
+            "x": 4,
+            "y": 4,
+            "colSpan": 4,
+            "rowSpan": 3
+          },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "resourceIds",
+                "value": ["${container_app_id}"]
+              }
+            ],
+            "type": "Extension/HubsExtension/PartType/MonitorChartPart",
+            "settings": {
+              "content": {
+                "title": "Container App Memory Usage",
+                "metrics": [
+                  {
+                    "resourceMetadata": {
+                      "id": "${container_app_id}"
+                    },
+                    "name": "MemoryPercentage",
+                    "aggregationType": 4,
+                    "namespace": "Microsoft.App/containerApps"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "4": {
+          "position": {
+            "x": 8,
+            "y": 4,
+            "colSpan": 4,
+            "rowSpan": 3
+          },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "resourceIds",
+                "value": ["${database_server_id}"]
+              }
+            ],
+            "type": "Extension/HubsExtension/PartType/MonitorChartPart",
+            "settings": {
+              "content": {
+                "title": "Database Connections",
+                "metrics": [
+                  {
+                    "resourceMetadata": {
+                      "id": "${database_server_id}"
+                    },
+                    "name": "active_connections",
+                    "aggregationType": 4,
+                    "namespace": "Microsoft.DBforPostgreSQL/flexibleServers"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "5": {
+          "position": {
+            "x": 0,
+            "y": 7,
+            "colSpan": 6,
+            "rowSpan": 3
+          },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "resourceIds",
+                "value": ["${redis_cache_id}"]
+              }
+            ],
+            "type": "Extension/HubsExtension/PartType/MonitorChartPart",
+            "settings": {
+              "content": {
+                "title": "Redis Cache Memory Usage",
+                "metrics": [
+                  {
+                    "resourceMetadata": {
+                      "id": "${redis_cache_id}"
+                    },
+                    "name": "usedmemorypercentage",
+                    "aggregationType": 4,
+                    "namespace": "Microsoft.Cache/Redis"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "6": {
+          "position": {
+            "x": 6,
+            "y": 7,
+            "colSpan": 6,
+            "rowSpan": 3
+          },
+          "metadata": {
+            "inputs": [
+              {
+                "name": "resourceTypeMode",
+                "isOptional": true
+              },
+              {
+                "name": "ComponentId",
+                "value": {
+                  "Name": "${application_insights_id}",
+                  "SubscriptionId": "${subscription_id}",
+                  "ResourceGroup": "${resource_group_name}"
+                },
+                "isOptional": true
+              }
+            ],
+            "type": "Extension/AppInsightsExtension/PartType/UserTimelineGalPt",
+            "settings": {
+              "content": {
+                "title": "User Sessions Timeline"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "model": {
+      "timeRange": {
+        "value": {
+          "relative": {
+            "duration": 24,
+            "timeUnit": 1
+          }
+        },
+        "type": "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+      },
+      "filterLocale": {
+        "value": "en-us"
+      },
+      "filters": {
+        "value": {
+          "MsPortalFx_TimeRange": {
+            "model": {
+              "format": "utc",
+              "granularity": "auto",
+              "relative": "24h"
+            },
+            "displayCache": {
+              "name": "UTC Time",
+              "value": "Past 24 hours"
+            },
+            "filteredPartIds": []
+          }
+        }
+      }
+    }
+  }
+}

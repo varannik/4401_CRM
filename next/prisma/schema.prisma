@@ -87,7 +87,7 @@ model Department {
 }
 
 model Company {
-  id              String    @id @default(cuid())
+  id              String      @id @default(cuid())
   name            String
   industry        String?
   location        String?
@@ -95,18 +95,22 @@ model Company {
   website         String?
   description     String?
   
-  // CRM specific fields
+  // Enhanced CRM specific fields
+  companyType     CompanyType @default(COMPANY)
+  organizationTags String[]   // Array of tags for easy searching
+  domain          String?     // Email domain for auto-classification
+  
   ownerDepartmentId String?
   projectTag      String?
-  doNotContact    Boolean   @default(false)
+  doNotContact    Boolean     @default(false)
   notes           String?
   
   firstContactDate DateTime?
   lastContactDate  DateTime?
-  contactCount     Int       @default(0)
+  contactCount     Int         @default(0)
   
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
   
   // Relations
   ownerDepartment Department?     @relation(fields: [ownerDepartmentId], references: [id])
@@ -149,7 +153,15 @@ model Communication {
   type           CommunicationType
   subject        String?
   notes          String?
-  metadata       Json?             // Store email metadata, meeting details, etc.
+  metadata       Json?             // Enhanced metadata: email headers, attachments info, etc.
+  
+  // Enhanced communication tracking
+  direction      Direction         @default(RECEIVED)
+  messageId      String?           // Unique email message ID
+  threadId       String?           // Email thread/conversation ID
+  importance     Importance        @default(NORMAL)
+  hasAttachments Boolean           @default(false)
+  tags           String[]          // Communication tags
   
   communicationDate DateTime
   createdAt      DateTime          @default(now())
@@ -163,6 +175,7 @@ model Communication {
   userId         String
   user           User     @relation(fields: [userId], references: [id])
   
+  @@unique([messageId])
   @@map("communications")
 }
 
@@ -176,6 +189,18 @@ model Project {
   updatedAt   DateTime @updatedAt
   
   @@map("projects")
+}
+
+// Settings model for custom company types and configurations
+model Setting {
+  id            String   @id @default(cuid())
+  key           String   @unique
+  value         Json
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  @@map("settings")
 }
 
 // Enums
@@ -192,6 +217,30 @@ enum CommunicationType {
   VIDEO_CALL
   IN_PERSON
   OTHER
+}
+
+enum CompanyType {
+  COMPANY
+  UNIVERSITY
+  GOVERNMENT
+  NON_PROFIT
+  RESEARCH_INSTITUTE
+  STARTUP
+  ENTERPRISE
+  SME
+  OTHER
+}
+
+enum Direction {
+  SENT
+  RECEIVED
+  INTERNAL
+}
+
+enum Importance {
+  LOW
+  NORMAL
+  HIGH
 }
 
 enum ProjectStatus {

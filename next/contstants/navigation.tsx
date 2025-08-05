@@ -5,24 +5,6 @@ export const navigation = [
         href: "/dashboard",
     },
     {
-        title: "Companies",
-        icon: "wallet",
-        list: [
-            {
-                title: "Overview",
-                href: "/companies",
-            },
-            {
-                title: "Company List",
-                href: "/companies/list",
-            },
-            {
-                title: "Add Company",
-                href: "/companies/new",
-            },
-        ],
-    },
-    {
         title: "Contacts",
         icon: "profile",
         list: [
@@ -31,8 +13,20 @@ export const navigation = [
                 href: "/contacts",
             },
             {
-                title: "Contact List",
+                title: "All Contacts",
                 href: "/contacts/list",
+            },
+            {
+                title: "Companies",
+                href: "/contacts/companies",
+            },
+            {
+                title: "Universities",
+                href: "/contacts/universities",
+            },
+            {
+                title: "Organizations",
+                href: "/contacts/organizations",
             },
             {
                 title: "Add Contact",
@@ -79,8 +73,8 @@ export const navigation = [
                 href: "/reports/communications",
             },
             {
-                title: "Company Insights",
-                href: "/reports/companies",
+                title: "Contact Insights",
+                href: "/reports/contacts",
             },
         ],
     },
@@ -91,6 +85,10 @@ export const navigation = [
             {
                 title: "Email Integration",
                 href: "/settings/email-integration",
+            },
+            {
+                title: "Contact Types",
+                href: "/settings/contact-types",
             },
             {
                 title: "Departments",
@@ -129,9 +127,9 @@ export const navigationUser = [
         href: "/communications",
     },
     {
-        title: "Company Search",
+        title: "Contact Search",
         icon: "search",
-        href: "/companies/search",
+        href: "/contacts/search",
     },
     {
         title: "Quick Log",

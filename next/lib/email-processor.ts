@@ -1,4 +1,4 @@
-import { EmailMetadata, MeetingMetadata } from './microsoft-graph';
+import { EmailMetadata, MeetingMetadata } from './types';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -94,10 +94,11 @@ export class EmailProcessor {
   private async findOrCreateCompanyAndContact(emailContact: { name: string; email: string }) {
     const domain = emailContact.email.split('@')[1];
     
-    // Try to find existing company by domain
+    // Try to find existing company by domain or email
     let company = await prisma.company.findFirst({
       where: {
         OR: [
+          { domain: domain },
           { website: { contains: domain } },
           { contacts: { some: { email: emailContact.email } } }
         ]
@@ -105,40 +106,45 @@ export class EmailProcessor {
       include: { contacts: true }
     });
     
-    // If no company found, create a suggestion (don't auto-create)
+    // If no company found, create new company record
     if (!company) {
-      // For now, create a basic company record that can be reviewed
       const companyInfo = await this.detectCompanyInfo(domain);
+      const companyType = this.detectCompanyType(domain);
       
-             company = await prisma.company.create({
-         data: {
-           name: companyInfo.name || this.generateCompanyNameFromDomain(domain),
-           industry: companyInfo.industry,
-           location: companyInfo.location,
-           country: companyInfo.country,
-           website: `https://${domain}`,
-           description: `Auto-detected from email communication with ${emailContact.email}`,
-           notes: 'Auto-created from email integration. Please review and update details.',
-           firstContactDate: new Date(),
-           lastContactDate: new Date(),
-           contactCount: 1
-         },
-         include: { contacts: true }
-       });
-         } else {
-       // Update last contact date
-       await prisma.company.update({
-         where: { id: company.id },
-         data: {
-           lastContactDate: new Date(),
-           contactCount: { increment: 1 }
-         }
-       });
-     }
-     
-     if (!company) {
-       throw new Error('Failed to create or find company');
-     }
+      company = await prisma.company.create({
+        data: {
+          name: companyInfo.name || this.generateCompanyNameFromDomain(domain),
+          industry: companyInfo.industry,
+          location: companyInfo.location,
+          country: companyInfo.country,
+          website: `https://${domain}`,
+          domain: domain,
+          companyType: companyType,
+          organizationTags: this.generateAutoTags(domain, companyInfo),
+          description: `Auto-detected from email communication with ${emailContact.email}`,
+          notes: 'Auto-created from email integration. Please review and update details.',
+          firstContactDate: new Date(),
+          lastContactDate: new Date(),
+          contactCount: 1
+        },
+        include: { contacts: true }
+      });
+    } else {
+      // Update last contact date and tags if needed
+      const updatedTags = await this.updateOrganizationTags(company.id, emailContact);
+      await prisma.company.update({
+        where: { id: company.id },
+        data: {
+          lastContactDate: new Date(),
+          contactCount: { increment: 1 },
+          organizationTags: updatedTags
+        }
+      });
+    }
+    
+    if (!company) {
+      throw new Error('Failed to create or find company');
+    }
     
     // Find or create contact
     let contact = await prisma.contact.findFirst({
@@ -174,7 +180,7 @@ export class EmailProcessor {
     return { company, contact };
   }
   
-  // Create communication record
+  // Create communication record with enhanced metadata
   private async createCommunicationRecord({
     email,
     company,
@@ -189,24 +195,28 @@ export class EmailProcessor {
     direction: string;
   }) {
     // Check if this email was already processed
-    const existing = await prisma.communication.findFirst({
-      where: {
-        metadata: {
-          path: ['messageId'],
-          equals: email.id
-        }
-      }
+    const existing = await prisma.communication.findUnique({
+      where: { messageId: email.id }
     });
     
     if (existing) {
       return existing;
     }
     
+    // Generate communication tags based on content and metadata
+    const autoTags = this.generateCommunicationTags(email, company);
+    
     return await prisma.communication.create({
       data: {
         type: 'EMAIL',
         subject: email.subject,
         notes: `${direction === 'SENT' ? 'Sent to' : 'Received from'} ${contact.firstName} ${contact.lastName}`,
+        direction: direction as any,
+        messageId: email.id,
+        threadId: email.conversationId,
+        importance: this.mapImportance(email.importance),
+        hasAttachments: email.hasAttachments,
+        tags: autoTags,
         communicationDate: new Date(email.sentDateTime),
         companyId: company.id,
         contactId: contact.id,
@@ -214,10 +224,12 @@ export class EmailProcessor {
         metadata: {
           messageId: email.id,
           conversationId: email.conversationId,
-          importance: email.importance,
-          hasAttachments: email.hasAttachments,
-          direction: direction,
-          isRead: email.isRead
+          originalImportance: email.importance,
+          isRead: email.isRead,
+          recipients: email.recipients.map(r => ({ name: r.name, email: r.email })),
+          sender: { name: email.sender.name, email: email.sender.email },
+          processingTimestamp: new Date().toISOString(),
+          autoGenerated: true
         }
       }
     });
@@ -311,28 +323,161 @@ export class EmailProcessor {
     return parts.length > 1 ? parts.slice(1).join(' ') : '';
   }
   
-  // Company detection (you can integrate with APIs like Clearbit)
+  // Enhanced company detection with type detection
   private async detectCompanyInfo(domain: string) {
     try {
-      // You can integrate with company detection APIs here
-      // For now, return basic info based on domain patterns
+      // Enhanced pattern recognition with type detection
       const companyPatterns = {
         'microsoft.com': { name: 'Microsoft Corporation', industry: 'Technology', location: 'Redmond, WA', country: 'United States' },
         'google.com': { name: 'Google LLC', industry: 'Technology', location: 'Mountain View, CA', country: 'United States' },
         'amazon.com': { name: 'Amazon.com Inc.', industry: 'E-commerce', location: 'Seattle, WA', country: 'United States' },
+        'mit.edu': { name: 'Massachusetts Institute of Technology', industry: 'Education', location: 'Cambridge, MA', country: 'United States' },
+        'stanford.edu': { name: 'Stanford University', industry: 'Education', location: 'Stanford, CA', country: 'United States' },
+        'harvard.edu': { name: 'Harvard University', industry: 'Education', location: 'Cambridge, MA', country: 'United States' },
         // Add more patterns as needed
       };
       
-             const patterns: Record<string, { name: string; industry: string; location: string; country: string }> = companyPatterns;
-       return patterns[domain.toLowerCase()] || {
-         name: null,
-         industry: null,
-         location: null,
-         country: null
-       };
+      const patterns: Record<string, { name: string; industry: string; location: string; country: string }> = companyPatterns;
+      return patterns[domain.toLowerCase()] || {
+        name: null,
+        industry: null,
+        location: null,
+        country: null
+      };
     } catch (error) {
       console.error('Company detection failed:', error);
       return { name: null, industry: null, location: null, country: null };
+    }
+  }
+
+  // Detect company type based on domain patterns
+  private detectCompanyType(domain: string): string {
+    // Educational institutions
+    if (domain.endsWith('.edu') || domain.includes('university') || domain.includes('college') || domain.includes('school')) {
+      return 'UNIVERSITY';
+    }
+    
+    // Government domains
+    if (domain.endsWith('.gov') || domain.endsWith('.gov.uk') || domain.includes('government')) {
+      return 'GOVERNMENT';
+    }
+    
+    // Non-profit patterns
+    if (domain.endsWith('.org') || domain.includes('foundation') || domain.includes('nonprofit')) {
+      return 'NON_PROFIT';
+    }
+    
+    // Research institutions
+    if (domain.includes('research') || domain.includes('institute') || domain.includes('lab')) {
+      return 'RESEARCH_INSTITUTE';
+    }
+    
+    // Default to company
+    return 'COMPANY';
+  }
+
+  // Generate automatic tags for organizations
+  private generateAutoTags(domain: string, companyInfo: any): string[] {
+    const tags: string[] = [];
+    
+    // Add industry-based tags
+    if (companyInfo.industry) {
+      tags.push(companyInfo.industry.toLowerCase());
+    }
+    
+    // Add location-based tags
+    if (companyInfo.country) {
+      tags.push(companyInfo.country.toLowerCase().replace(/\s+/g, '-'));
+    }
+    
+    // Add domain-based tags
+    if (domain.endsWith('.edu')) {
+      tags.push('education', 'academic');
+    } else if (domain.endsWith('.gov')) {
+      tags.push('government', 'public-sector');
+    } else if (domain.endsWith('.org')) {
+      tags.push('non-profit', 'organization');
+    }
+    
+    // Add size indicators (basic patterns)
+    const largeTechCompanies = ['microsoft.com', 'google.com', 'amazon.com', 'apple.com', 'meta.com'];
+    if (largeTechCompanies.includes(domain.toLowerCase())) {
+      tags.push('enterprise', 'large-corporation');
+    }
+    
+    return [...new Set(tags)]; // Remove duplicates
+  }
+
+  // Update organization tags based on new communication
+  private async updateOrganizationTags(companyId: string, emailContact: any): Promise<string[]> {
+    const company = await prisma.company.findUnique({
+      where: { id: companyId }
+    });
+    
+    if (!company) return [];
+    
+    const currentTags = company.organizationTags || [];
+    const newTags = [...currentTags];
+    
+    // Add contact-based tags if not already present
+    const contactDomain = emailContact.email.split('@')[1];
+    const additionalTags = this.generateAutoTags(contactDomain, {});
+    
+    additionalTags.forEach(tag => {
+      if (!newTags.includes(tag)) {
+        newTags.push(tag);
+      }
+    });
+    
+    return newTags;
+  }
+
+  // Generate communication tags
+  private generateCommunicationTags(email: EmailMetadata, company: any): string[] {
+    const tags: string[] = [];
+    
+    // Add subject-based tags
+    const subject = email.subject.toLowerCase();
+    if (subject.includes('meeting') || subject.includes('call')) {
+      tags.push('meeting-request');
+    }
+    if (subject.includes('proposal') || subject.includes('quote')) {
+      tags.push('business-proposal');
+    }
+    if (subject.includes('urgent') || subject.includes('important')) {
+      tags.push('urgent');
+    }
+    if (subject.includes('follow-up') || subject.includes('followup')) {
+      tags.push('follow-up');
+    }
+    
+    // Add company type tags
+    if (company.companyType) {
+      tags.push(company.companyType.toLowerCase());
+    }
+    
+    // Add importance-based tags
+    if (email.importance === 'high') {
+      tags.push('high-priority');
+    }
+    
+    // Add attachment tags
+    if (email.hasAttachments) {
+      tags.push('has-attachments');
+    }
+    
+    return [...new Set(tags)]; // Remove duplicates
+  }
+
+  // Map email importance to enum
+  private mapImportance(importance: string): string {
+    switch (importance.toLowerCase()) {
+      case 'high':
+        return 'HIGH';
+      case 'low':
+        return 'LOW';
+      default:
+        return 'NORMAL';
     }
   }
 }
