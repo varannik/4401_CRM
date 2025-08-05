@@ -1,0 +1,73 @@
+# Development environment configuration for CRM Azure deployment
+# Copy this file to dev.tfvars and update with your values
+
+# Environment Configuration
+environment = "dev"
+location    = "East US 2"
+owner       = "CRM-Team"
+
+# Network Configuration
+vnet_address_space              = ["10.0.0.0/16"]
+container_apps_subnet_address   = ["10.0.1.0/24"]
+database_subnet_address         = ["10.0.2.0/24"]
+redis_subnet_address           = ["10.0.3.0/24"]
+
+# Container Registry Configuration
+container_registry_sku = "Basic"  # Cost-optimized for development
+
+# Database Configuration - Development Optimized
+db_admin_username               = "crmadmin"
+db_admin_password              = "DevPassword123!"  # CHANGE THIS!
+database_name                  = "crmdb"
+database_sku_name             = "B_Standard_B1ms"  # Burstable tier
+database_storage_mb           = 32768  # 32 GB
+database_backup_retention_days = 7     # Minimal retention for dev
+
+# Redis Configuration - Basic Tier
+redis_capacity = 0      # 250 MB
+redis_family   = "C"    # Basic/Standard family
+redis_sku_name = "Basic"
+
+# Container Apps Configuration - Scale to Zero
+container_image    = "crm-app:latest"
+container_port     = 3000
+min_replicas      = 0    # Scale to zero for cost savings
+max_replicas      = 3    # Lower limit for dev
+cpu_requests      = "0.25"
+memory_requests   = "0.5Gi"
+
+# Application Secrets (REQUIRED - Update these values!)
+azure_ad_client_id     = "your-azure-ad-client-id-here"
+azure_ad_client_secret = "your-azure-ad-client-secret-here"
+azure_ad_tenant_id     = "your-azure-ad-tenant-id-here"
+nextauth_secret        = "your-nextauth-secret-key-at-least-32-characters-long"
+email_webhook_secret   = "your-email-webhook-secret-optional"
+
+# Front Door Configuration
+custom_domain = ""  # Leave empty to use default Azure domain
+
+# Monitoring Configuration
+alert_email_addresses = [
+  "developer@yourcompany.com",
+  "team-lead@yourcompany.com"
+]
+alert_webhook_url = ""  # Optional: Slack/Teams webhook URL
+
+# Development-specific overrides
+environment_config = {
+  database_sku_name     = "B_Standard_B1ms"  # Burstable performance
+  redis_sku_name        = "Basic"            # Basic tier
+  min_replicas          = 0                  # Scale to zero
+  max_replicas          = 3                  # Limited scaling
+  backup_retention_days = 7                  # Short retention
+}
+
+# Note: This configuration is optimized for development use with cost savings.
+# It uses:
+# - Burstable database performance tier
+# - Basic Redis cache
+# - Scale-to-zero Container Apps
+# - Minimal backup retention
+# - Basic container registry tier
+# 
+# Estimated monthly cost: $50-100

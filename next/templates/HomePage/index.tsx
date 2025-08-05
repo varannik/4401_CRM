@@ -10,7 +10,7 @@ import QuickActions from "./QuickActions";
 
 const HomePage = () => {
     return (
-        <Layout title="CRM Dashboard">
+        <Layout title="Dashboard">
             <div className="flex max-lg:block">
                 <div className="col-left">
                     <Overview />
