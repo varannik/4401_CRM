@@ -16,7 +16,7 @@ model User {
   email       String   @unique
   name        String?
   image       String?
-  role        UserRole @default(USER)
+  role        UserRole @default(consultant)
   departmentId String?
   
   createdAt   DateTime @default(now())
@@ -180,9 +180,9 @@ model Project {
 
 // Enums
 enum UserRole {
-  USER          // Consult/comment level
-  ADMIN         // Limited admin rights for department
-  SUPER_ADMIN   // Overall admin rights for IT/system owner
+  consultant    // View dashboard, add comments, view assigned companies
+  dept_admin    // Above + edit department companies, assign companies, manage department users
+  sys_admin     // Full system access, user management, system configuration
 }
 
 enum CommunicationType {
