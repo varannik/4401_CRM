@@ -42,7 +42,7 @@ export const navigation = [
     },
     {
         title: "Communications",
-        icon: "message",
+        icon: "chat-think",
         list: [
             {
                 title: "Recent Activity",
@@ -86,7 +86,7 @@ export const navigation = [
     },
     {
         title: "Settings",
-        icon: "settings",
+        icon: 'edit',
         list: [
             {
                 title: "Email Integration",
@@ -135,7 +135,7 @@ export const navigationUser = [
     },
     {
         title: "Quick Log",
-        icon: "message",
+        icon: "chat-think",
         href: "/communications/log",
     },
     {
