@@ -186,7 +186,7 @@ echo -e "${BLUE}ACR debug:${NC} name='${ACR_NAME}' server='${ACR_SERVER}' cloud=
 # Only build and push if ACR exists
 if [ -n "$ACR_NAME" ] && [ -n "$ACR_SERVER" ]; then
     echo -e "${YELLOW}📦 Building container image...${NC}"
-    docker build -t "crm-app:${ENVIRONMENT}" .
+    docker build --platform linux/amd64 -t "crm-app:${ENVIRONMENT}" .
 
     # Allow brief propagation time after potential ACR creation
     sleep 5
@@ -246,7 +246,7 @@ if [ -z "$ACR_NAME" ]; then
     ACR_PASS=$(az acr credential show --name "$REGISTRY_NAME" --query passwords[0].value -o tsv)
     
     # Build and push image
-    docker build -t "crm-app:${ENVIRONMENT}" .
+    docker build --platform linux/amd64 -t "crm-app:${ENVIRONMENT}" .
     # Resolve server from Azure directly, with safe fallback
     REGISTRY_SERVER=$(az acr show --name "$REGISTRY_NAME" --query loginServer -o tsv 2>/dev/null || echo "")
     if [ -z "$REGISTRY_SERVER" ]; then

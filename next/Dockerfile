@@ -1,5 +1,5 @@
 # Use Node.js 18 Alpine for smaller image size (AMD64 for Azure Container Apps compatibility)
-FROM --platform=linux/amd64 node:18-alpine AS base
+FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -28,7 +28,7 @@ COPY . .
 # Ensure Prisma Client is generated (we disabled npm scripts earlier)
 COPY prisma ./prisma
 ENV DATABASE_URL=postgresql://user:pass@localhost:5432/db?schema=public
-RUN npx prisma generate
+RUN npm exec prisma generate
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/docs/getting-started#telemetry
