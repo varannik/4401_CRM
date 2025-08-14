@@ -1,7 +1,8 @@
 "use client";
 
 import { ThemeProvider } from "next-themes";
-import { AuthSessionProvider, ZustandProvider } from "@/components/Providers";
+import AuthSessionProvider from "@/components/SessionProvider";
+import ZustandProvider from "@/components/ZustandProvider";
 
 const Providers = ({ children }: { children: React.ReactNode }) => {
     return (
