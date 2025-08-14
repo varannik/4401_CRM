@@ -115,52 +115,43 @@ resource "azurerm_container_app" "main" {
         value = var.nextauth_url
       }
 
-      # Azure AD configuration from Key Vault
+      # Azure AD configuration from Key Vault (using compliant secret names)
       env {
         name        = "AZURE_AD_CLIENT_ID"
-        secret_name = "AZURE_AD_CLIENT_ID"
+        secret_name = "azure-ad-client-id"
       }
 
       env {
         name        = "AZURE_AD_CLIENT_SECRET"
-        secret_name = "AZURE_AD_CLIENT_SECRET"
+        secret_name = "azure-ad-client-secret"
       }
 
       env {
         name        = "AZURE_AD_TENANT_ID"
-        secret_name = "AZURE_AD_TENANT_ID"
+        secret_name = "azure-ad-tenant-id"
       }
 
       env {
         name        = "NEXTAUTH_SECRET"
-        secret_name = "NEXTAUTH_SECRET"
+        secret_name = "nextauth-secret"
       }
 
       env {
         name        = "EMAIL_WEBHOOK_SECRET"
-        secret_name = "EMAIL_WEBHOOK_SECRET"
+        secret_name = "email-webhook-secret"
       }
 
-      # Health probe
+      # Health probes (use minimal fields supported by current provider)
       liveness_probe {
         transport = "HTTP"
         port      = var.container_port
         path      = "/api/health"
-        initial_delay_seconds = 30
-        period_seconds        = 30
-        timeout_seconds       = 5
-        failure_threshold     = 3
       }
 
       readiness_probe {
         transport = "HTTP"
         port      = var.container_port
         path      = "/api/health"
-        initial_delay_seconds = 10
-        period_seconds        = 10
-        timeout_seconds       = 3
-        failure_threshold     = 3
-        success_threshold     = 1
       }
     }
 
@@ -170,12 +161,7 @@ resource "azurerm_container_app" "main" {
       concurrent_requests = 100
     }
 
-    # CPU scaling rule
-    azure_queue_scale_rule {
-      name         = "cpu-scale"
-      queue_name   = "scale-queue"
-      queue_length = 5
-    }
+    # (Removed) azure_queue_scale_rule requires authentication block in newer providers
   }
 
   # Ingress configuration

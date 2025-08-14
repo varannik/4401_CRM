@@ -68,11 +68,15 @@ resource "azurerm_key_vault_access_policy" "deployer" {
 }
 
 # Store application secrets
-resource "azurerm_key_vault_secret" "secrets" {
-  for_each = var.secrets
+# Store application secrets (expanded map to list to avoid sensitive for_each limitation)
+locals {
+  secrets_list = [for k, v in var.secrets : { name = k, value = v }]
+}
 
-  name         = each.key
-  value        = each.value
+resource "azurerm_key_vault_secret" "secrets" {
+  count        = length(local.secrets_list)
+  name         = local.secrets_list[count.index].name
+  value        = local.secrets_list[count.index].value
   key_vault_id = azurerm_key_vault.main.id
 
   tags = var.tags

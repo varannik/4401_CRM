@@ -11,9 +11,12 @@ resource "azurerm_container_registry" "main" {
   # Enable public network access (can be restricted later)
   public_network_access_enabled = true
 
-  # Network rule set for security
-  network_rule_set {
-    default_action = "Allow"  # Change to "Deny" and add specific rules for production
+  # Network rule set for security (only supported in Premium SKU)
+  dynamic "network_rule_set" {
+    for_each = var.sku == "Premium" ? [1] : []
+    content {
+      default_action = "Allow"  # Change to "Deny" and add specific rules for production
+    }
   }
 
   # Enable content trust for image signing in higher SKUs
@@ -33,13 +36,7 @@ resource "azurerm_container_registry" "main" {
     }
     }
 
-  # Enable vulnerability scanning for Premium SKU
-  dynamic "quarantine_policy" {
-    for_each = var.sku == "Premium" ? [1] : []
-    content {
-      enabled = true
-    }
-  }
+  # (Removed) quarantine_policy block is not supported by current provider version
 
   tags = var.tags
 }

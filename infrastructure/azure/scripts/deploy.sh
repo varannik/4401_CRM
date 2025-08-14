@@ -82,20 +82,125 @@ cd "$ROOT_DIR/../../next"
 
 # Get container registry from Terraform output (if available)
 ACR_NAME=""
+ACR_SERVER=""
 if [ -f "$TERRAFORM_DIR/.terraform/terraform.tfstate" ]; then
-    ACR_NAME=$(terraform -chdir="$TERRAFORM_DIR" output -raw container_registry_name 2>/dev/null || echo "")
+    # Get outputs and filter out warnings/errors to get clean values
+    ACR_NAME_RAW=$(terraform -chdir="$TERRAFORM_DIR" output -raw container_registry_name 2>/dev/null || echo "")
+    ACR_SERVER_RAW=$(terraform -chdir="$TERRAFORM_DIR" output -raw container_registry_server 2>/dev/null || echo "")
+    
+    # Only use output if it doesn't contain terraform warnings or errors
+    if [[ "$ACR_NAME_RAW" =~ ^[a-zA-Z0-9]+$ ]]; then
+        ACR_NAME="$ACR_NAME_RAW"
+    fi
+    
+    if [[ "$ACR_SERVER_RAW" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+        ACR_SERVER="$ACR_SERVER_RAW"
+    fi
 fi
 
-if [ -z "$ACR_NAME" ]; then
-    echo -e "${YELLOW}⚠️ Container registry not found in Terraform state. Will create it first.${NC}"
-else
+# If registry is not in state yet, create it now (targeted apply) so we can push image before full deploy
+if [ -z "$ACR_NAME" ] || [ -z "$ACR_SERVER" ]; then
+    echo -e "${YELLOW}⚠️ Container registry not found in state. Creating registry first...${NC}"
+    terraform -chdir="$TERRAFORM_DIR" init -backend-config="$BACKEND_CONFIG" >/dev/null
+    terraform -chdir="$TERRAFORM_DIR" plan -var-file="$ENV_FILE" -target=module.container_registry -out=acr.tfplan >/dev/null
+    
+    if terraform -chdir="$TERRAFORM_DIR" apply -auto-approve acr.tfplan; then
+        echo -e "${GREEN}✅ Container registry created successfully${NC}"
+        # Read outputs again with clean parsing
+        ACR_NAME_RAW=$(terraform -chdir="$TERRAFORM_DIR" output -raw container_registry_name 2>/dev/null || echo "")
+        ACR_SERVER_RAW=$(terraform -chdir="$TERRAFORM_DIR" output -raw container_registry_server 2>/dev/null || echo "")
+        
+        # Only use clean values
+        if [[ "$ACR_NAME_RAW" =~ ^[a-zA-Z0-9]+$ ]]; then
+            ACR_NAME="$ACR_NAME_RAW"
+        fi
+        
+        if [[ "$ACR_SERVER_RAW" =~ ^[a-zA-Z0-9.-]+$ ]]; then
+            ACR_SERVER="$ACR_SERVER_RAW"
+        fi
+    else
+        echo -e "${YELLOW}⚠️ Terraform ACR creation failed. Trying to create ACR directly with Azure CLI...${NC}"
+        
+        # Get location from tfvars file more reliably
+        LOCATION=$(grep -E '^location\s*=' "$ENV_FILE" | sed 's/.*=\s*"\([^"]*\)".*/\1/')
+        if [ -z "$LOCATION" ]; then
+            LOCATION="UAE North"  # fallback
+        fi
+        echo -e "${BLUE}Using location: $LOCATION${NC}"
+        
+        # Generate unique suffix using current timestamp instead of openssl
+        SUFFIX=$(date +%s | tail -c 6)  # last 6 digits of timestamp
+        
+        # Create resource group with predictable name
+        RESOURCE_GROUP="rg-crm-${ENVIRONMENT}-manual-${SUFFIX}"
+        echo -e "${YELLOW}📦 Creating resource group: $RESOURCE_GROUP${NC}"
+        az group create \
+            --name "$RESOURCE_GROUP" \
+            --location "$LOCATION" \
+            --tags Environment="$ENVIRONMENT" Project="CRM" ManagedBy="Manual" \
+            --output none
+        
+        # Generate ACR name (5-50 chars, alphanumeric only, globally unique)
+        ACR_NAME="acrcrm${ENVIRONMENT}${SUFFIX}"
+        ACR_NAME=$(echo "$ACR_NAME" | tr '[:upper:]' '[:lower:]')  # ensure lowercase
+        
+        echo -e "${YELLOW}📦 Creating ACR: $ACR_NAME in $RESOURCE_GROUP${NC}"
+        if az acr create \
+            --resource-group "$RESOURCE_GROUP" \
+            --name "$ACR_NAME" \
+            --sku Basic \
+            --admin-enabled true \
+            --location "$LOCATION" \
+            --tags Environment="$ENVIRONMENT" Project="CRM" ManagedBy="Manual" \
+            --output none; then
+            
+            ACR_SERVER="$ACR_NAME.azurecr.io"
+            echo -e "${GREEN}✅ ACR created successfully: $ACR_SERVER${NC}"
+            echo -e "${BLUE}ℹ️ ACR was created manually. You may need to import it into Terraform state later.${NC}"
+        else
+            echo -e "${RED}❌ Failed to create ACR with Azure CLI. Will skip container build.${NC}"
+            ACR_NAME=""
+            ACR_SERVER=""
+        fi
+    fi
+fi
+
+# If server still not known, query Azure for the actual loginServer
+if [ -n "$ACR_NAME" ] && [ -z "$ACR_SERVER" ]; then
+    ACR_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv 2>/dev/null || echo "")
+fi
+
+# Final fallback: use standard .azurecr.io suffix for AzureCloud
+if [ -n "$ACR_NAME" ] && [ -z "$ACR_SERVER" ]; then
+    CURRENT_CLOUD=$(az cloud show --query name -o tsv)
+    if [ "$CURRENT_CLOUD" = "AzureCloud" ]; then
+        ACR_SERVER="${ACR_NAME}.azurecr.io"
+    else
+        echo -e "${RED}❌ Unknown cloud: $CURRENT_CLOUD. Cannot determine ACR suffix.${NC}"
+        exit 1
+    fi
+fi
+
+echo -e "${BLUE}ACR debug:${NC} name='${ACR_NAME}' server='${ACR_SERVER}' cloud='$(az cloud show --query name -o tsv)'"
+
+# Only build and push if ACR exists
+if [ -n "$ACR_NAME" ] && [ -n "$ACR_SERVER" ]; then
     echo -e "${YELLOW}📦 Building container image...${NC}"
     docker build -t "crm-app:${ENVIRONMENT}" .
-    
-    # Login to ACR and push
-    az acr login --name "$ACR_NAME"
-    docker tag "crm-app:${ENVIRONMENT}" "${ACR_NAME}.azurecr.io/crm-app:${ENVIRONMENT}"
-    docker push "${ACR_NAME}.azurecr.io/crm-app:${ENVIRONMENT}"
+
+    # Allow brief propagation time after potential ACR creation
+    sleep 5
+
+    # Login to ACR and push (use explicit docker login against server)
+    ACR_USER=$(az acr credential show --name "$ACR_NAME" --query username -o tsv)
+    ACR_PASS=$(az acr credential show --name "$ACR_NAME" --query passwords[0].value -o tsv)
+    docker login "$ACR_SERVER" -u "$ACR_USER" -p "$ACR_PASS"
+    docker tag "crm-app:${ENVIRONMENT}" "${ACR_SERVER}/crm-app:${ENVIRONMENT}"
+    docker push "${ACR_SERVER}/crm-app:${ENVIRONMENT}"
+    echo -e "${GREEN}✅ Container image pushed successfully${NC}"
+else
+    echo -e "${YELLOW}⚠️ Skipping container build and push (ACR not available)${NC}"
+    echo -e "${YELLOW}   Infrastructure will be deployed with placeholder image${NC}"
 fi
 
 # Deploy infrastructure
@@ -128,6 +233,7 @@ terraform apply "$ENVIRONMENT.tfplan"
 echo -e "${YELLOW}📊 Getting deployment outputs...${NC}"
 APP_URL=$(terraform output -raw application_url)
 REGISTRY_NAME=$(terraform output -raw container_registry_name)
+REGISTRY_SERVER=$(terraform output -raw container_registry_server)
 DATABASE_SERVER=$(terraform output -raw database_server_fqdn)
 
 # Update container image if ACR was just created
@@ -135,13 +241,21 @@ if [ -z "$ACR_NAME" ]; then
     echo -e "${YELLOW}📦 Container registry was just created. Building and pushing image...${NC}"
     cd "$ROOT_DIR/../../next"
     
-    # Login to newly created ACR
-    az acr login --name "$REGISTRY_NAME"
+    # Login to newly created ACR (explicit docker login)
+    ACR_USER=$(az acr credential show --name "$REGISTRY_NAME" --query username -o tsv)
+    ACR_PASS=$(az acr credential show --name "$REGISTRY_NAME" --query passwords[0].value -o tsv)
     
     # Build and push image
     docker build -t "crm-app:${ENVIRONMENT}" .
-    docker tag "crm-app:${ENVIRONMENT}" "${REGISTRY_NAME}.azurecr.io/crm-app:${ENVIRONMENT}"
-    docker push "${REGISTRY_NAME}.azurecr.io/crm-app:${ENVIRONMENT}"
+    # Resolve server from Azure directly, with safe fallback
+    REGISTRY_SERVER=$(az acr show --name "$REGISTRY_NAME" --query loginServer -o tsv 2>/dev/null || echo "")
+    if [ -z "$REGISTRY_SERVER" ]; then
+        REGISTRY_SERVER="${REGISTRY_NAME}.azurecr.io"
+    fi
+    echo -e "${BLUE}ACR debug (post-apply):${NC} name='${REGISTRY_NAME}' server='${REGISTRY_SERVER}' cloud='$(az cloud show --query name -o tsv)'"
+    docker login "$REGISTRY_SERVER" -u "$ACR_USER" -p "$ACR_PASS"
+    docker tag "crm-app:${ENVIRONMENT}" "${REGISTRY_SERVER}/crm-app:${ENVIRONMENT}"
+    docker push "${REGISTRY_SERVER}/crm-app:${ENVIRONMENT}"
     
     # Update Container App with new image
     echo -e "${YELLOW}🔄 Updating Container App with new image...${NC}"
@@ -203,7 +317,7 @@ echo -e "${BLUE}📋 Deployment Summary:${NC}"
 echo -e "  Environment: ${ENVIRONMENT}"
 echo -e "  Application URL: ${APP_URL}"
 echo -e "  Database Server: ${DATABASE_SERVER}"
-echo -e "  Container Registry: ${REGISTRY_NAME}.azurecr.io"
+echo -e "  Container Registry: ${REGISTRY_SERVER}"
 echo -e ""
 echo -e "${YELLOW}📝 Next steps:${NC}"
 echo -e "  1. Configure your custom domain (if applicable)"

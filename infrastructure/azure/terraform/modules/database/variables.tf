@@ -21,13 +21,15 @@ variable "environment" {
 }
 
 variable "subnet_id" {
-  description = "ID of the subnet for the database"
+  description = "ID of the subnet for the database (optional for public access)"
   type        = string
+  default     = null
 }
 
 variable "private_dns_zone_id" {
-  description = "ID of the private DNS zone for the database"
+  description = "ID of the private DNS zone for the database (optional for public access)"
   type        = string
+  default     = null
 }
 
 variable "administrator_login" {

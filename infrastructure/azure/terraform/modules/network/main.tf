@@ -17,13 +17,7 @@ resource "azurerm_subnet" "container_apps" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = var.container_apps_subnet_address
 
-  delegation {
-    name = "container-apps-delegation"
-    service_delegation {
-      name    = "Microsoft.App/environments"
-      actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
-    }
-  }
+  # Delegation removed - Azure Container Apps Environment will handle delegation automatically
 }
 
 # Database subnet
@@ -113,7 +107,7 @@ resource "azurerm_network_security_group" "container_apps" {
     protocol                   = "*"
     source_port_range          = "*"
     destination_port_range     = "*"
-    source_address_prefix      = "10.0.1.0/24"
+    source_address_prefix      = var.container_apps_subnet_address[0]
     destination_address_prefix = "*"
   }
 
@@ -141,7 +135,7 @@ resource "azurerm_network_security_group" "database" {
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "5432"
-    source_address_prefix      = "10.0.1.0/24"
+    source_address_prefix      = var.container_apps_subnet_address[0]
     destination_address_prefix = "*"
   }
 

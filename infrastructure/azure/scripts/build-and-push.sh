@@ -65,7 +65,7 @@ if [ -z "$ACR_NAME" ]; then
 fi
 
 echo -e "${GREEN}✅ Prerequisites check passed${NC}"
-echo -e "${BLUE}📦 Container Registry: ${ACR_NAME}.azurecr.io${NC}"
+echo -e "${BLUE}📦 Container Registry: ${ACR_NAME}${NC}"
 
 # Build the container image
 echo -e "${YELLOW}🔨 Building container image...${NC}"
@@ -76,7 +76,18 @@ echo -e "${YELLOW}📂 Preparing build context...${NC}"
 
 # Build the image
 IMAGE_NAME="crm-app"
-FULL_TAG="${ACR_NAME}.azurecr.io/${IMAGE_NAME}:${TAG}"
+# Resolve login server robustly
+LOGIN_SERVER=$(az acr show --name "$ACR_NAME" --query loginServer -o tsv 2>/dev/null || echo "")
+if [ -z "$LOGIN_SERVER" ]; then
+    CURRENT_CLOUD=$(az cloud show --query name -o tsv)
+    if [ "$CURRENT_CLOUD" = "AzureCloud" ]; then
+        LOGIN_SERVER="${ACR_NAME}.azurecr.io"
+    else
+        echo -e "${RED}❌ Unknown cloud: $CURRENT_CLOUD. Cannot determine ACR suffix.${NC}"
+        exit 1
+    fi
+fi
+FULL_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${TAG}"
 
 docker build \
     --tag "${IMAGE_NAME}:${TAG}" \
@@ -96,7 +107,7 @@ echo -e "${YELLOW}📤 Pushing image to registry...${NC}"
 docker push "$FULL_TAG"
 
 # Also tag and push as latest for the environment
-ENV_TAG="${ACR_NAME}.azurecr.io/${IMAGE_NAME}:${ENVIRONMENT}-latest"
+ENV_TAG="${LOGIN_SERVER}/${IMAGE_NAME}:${ENVIRONMENT}-latest"
 docker tag "${IMAGE_NAME}:${TAG}" "$ENV_TAG"
 docker push "$ENV_TAG"
 
@@ -137,7 +148,7 @@ fi
 # Summary
 echo -e "${GREEN}✅ Build and push completed successfully!${NC}"
 echo -e "${BLUE}📋 Image Details:${NC}"
-echo -e "  Registry: ${ACR_NAME}.azurecr.io"
+echo -e "  Registry: ${LOGIN_SERVER}"
 echo -e "  Repository: ${IMAGE_NAME}"
 echo -e "  Tag: ${TAG}"
 echo -e "  Environment Tag: ${ENVIRONMENT}-latest"

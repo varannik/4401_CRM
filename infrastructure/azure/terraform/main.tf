@@ -135,8 +135,8 @@ module "database" {
   resource_prefix        = local.resource_prefix
   environment            = var.environment
   
-  subnet_id              = module.network.database_subnet_id
-  private_dns_zone_id    = module.network.database_private_dns_zone_id
+  subnet_id              = null
+  private_dns_zone_id    = null
   
   administrator_login    = var.db_admin_username
   administrator_password = var.db_admin_password
@@ -149,6 +149,9 @@ module "database" {
   log_analytics_workspace_id    = module.monitoring.log_analytics_workspace_id
   
   tags = local.common_tags
+  
+  # Ensure Key Vault access policy is fully applied before creating secrets
+  depends_on = [module.key_vault]
 }
 
 # Redis Cache module
@@ -198,13 +201,13 @@ module "container_apps" {
   # Database connection
   database_url                = module.database.connection_string
   
-  # Key Vault secrets
+  # Key Vault secrets (names must be lowercase alphanumeric with - or . only)
   key_vault_secrets = {
-    AZURE_AD_CLIENT_ID     = module.key_vault.secret_uris["AZURE-AD-CLIENT-ID"]
-    AZURE_AD_CLIENT_SECRET = module.key_vault.secret_uris["AZURE-AD-CLIENT-SECRET"]
-    AZURE_AD_TENANT_ID     = module.key_vault.secret_uris["AZURE-AD-TENANT-ID"]
-    NEXTAUTH_SECRET        = module.key_vault.secret_uris["NEXTAUTH-SECRET"]
-    EMAIL_WEBHOOK_SECRET   = module.key_vault.secret_uris["EMAIL-WEBHOOK-SECRET"]
+    azure-ad-client-id     = module.key_vault.secret_uris["AZURE-AD-CLIENT-ID"]
+    azure-ad-client-secret = module.key_vault.secret_uris["AZURE-AD-CLIENT-SECRET"]
+    azure-ad-tenant-id     = module.key_vault.secret_uris["AZURE-AD-TENANT-ID"]
+    nextauth-secret        = module.key_vault.secret_uris["NEXTAUTH-SECRET"]
+    email-webhook-secret   = module.key_vault.secret_uris["EMAIL-WEBHOOK-SECRET"]
   }
   
   # Redis connection
@@ -239,4 +242,3 @@ module "front_door" {
   
   depends_on = [module.container_apps]
 }
-

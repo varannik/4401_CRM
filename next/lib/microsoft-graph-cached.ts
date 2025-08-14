@@ -175,7 +175,7 @@ export async function processWebhookQueue(priority: 'high' | 'normal' | 'low' = 
   const redis = await getRedisClient();
   const queueKey = `webhook:queue:${priority}`;
   
-  const processedItems = [];
+  const processedItems: any[] = [];
   
   for (let i = 0; i < batchSize; i++) {
     const item = await redis.rPop(queueKey);
@@ -306,7 +306,7 @@ export async function getCachedDashboardData(userId: string) {
 // Cache invalidation helper for webhook-related data
 export async function invalidateWebhookCache(messageId?: string, companyId?: string, contactEmail?: string) {
   const redis = await getRedisClient();
-  const patterns = [];
+  const patterns: string[] = [];
   
   if (messageId) {
     patterns.push(`webhook:email:${messageId}`);

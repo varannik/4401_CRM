@@ -1,8 +1,8 @@
 import { EmailMetadata, MeetingMetadata } from './types';
 import { prisma } from '@/lib/prisma';
-import type { Prisma, $Enums } from '@prisma/client';
+import type { $Enums } from '@prisma/client';
 
-type CompanyWithContacts = Prisma.CompanyGetPayload<{ include: { contacts: true } }>;
+type CompanyWithContacts = any;
 
 // Email processing service
 export class EmailProcessor {
@@ -10,13 +10,13 @@ export class EmailProcessor {
   
   // Process email metadata and create CRM records
   async processEmailMetadata(emails: EmailMetadata[], userId: string) {
-    const processedEmails = [];
+    const processedEmails: Array<{ company: any; contact: any; communication: any }> = [];
     
     for (const email of emails) {
       try {
         const result = await this.processIndividualEmail(email, userId);
-        if (result) {
-          processedEmails.push(result);
+        if (result && Array.isArray(result)) {
+          processedEmails.push(...result);
         }
       } catch (error) {
         console.error(`Failed to process email ${email.id}:`, error);
@@ -35,7 +35,7 @@ export class EmailProcessor {
       return null;
     }
     
-    const results = [];
+    const results: Array<{ company: any; contact: any; communication: any }> = [];
     
     for (const externalEmail of externalEmails) {
       try {
@@ -239,13 +239,13 @@ export class EmailProcessor {
   
   // Process meeting metadata
   async processMeetingMetadata(meetings: MeetingMetadata[], userId: string) {
-    const processedMeetings = [];
+    const processedMeetings: Array<{ company: any; contact: any; communication: any }> = [];
     
     for (const meeting of meetings) {
       try {
         const result = await this.processMeeting(meeting, userId);
-        if (result) {
-          processedMeetings.push(result);
+        if (result && Array.isArray(result)) {
+          processedMeetings.push(...result);
         }
       } catch (error) {
         console.error(`Failed to process meeting ${meeting.id}:`, error);
@@ -266,7 +266,7 @@ export class EmailProcessor {
       return null; // Internal meeting only
     }
     
-    const results = [];
+    const results: Array<{ company: any; contact: any; communication: any }> = [];
     
     for (const attendee of externalAttendees) {
       try {

@@ -16,10 +16,10 @@ output "key_vault_uri" {
 }
 
 output "secret_uris" {
-  description = "URIs of the secrets stored in Key Vault"
+  description = "URIs of the secrets stored in Key Vault (keyed by secret name)"
   value = {
-    for key, secret in azurerm_key_vault_secret.secrets :
-    key => secret.versionless_id
+    for idx, s in local.secrets_list :
+    s.name => azurerm_key_vault_secret.secrets[idx].versionless_id
   }
 }
 

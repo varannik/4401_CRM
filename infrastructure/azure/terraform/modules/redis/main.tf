@@ -11,13 +11,8 @@ resource "azurerm_redis_cache" "main" {
   enable_non_ssl_port = false  # Always use SSL
   minimum_tls_version = "1.2"
 
-  # Subnet configuration for Premium SKU
-  dynamic "subnet_id" {
-    for_each = var.sku_name == "Premium" ? [var.subnet_id] : []
-    content {
-      subnet_id = subnet_id.value
-    }
-  }
+  # Subnet configuration for Premium SKU (use property directly when provided)
+  subnet_id = var.sku_name == "Premium" ? var.subnet_id : null
 
   # Redis configuration
   redis_configuration {
@@ -32,13 +27,7 @@ resource "azurerm_redis_cache" "main" {
     rdb_storage_connection_string  = var.sku_name == "Premium" && var.environment == "prod" ? var.backup_storage_connection_string : null
   }
 
-  # Enable zone redundancy for Premium SKU in production
-  dynamic "zones" {
-    for_each = var.sku_name == "Premium" && var.environment == "prod" ? ["1", "2"] : []
-    content {
-      zones = [zones.value]
-    }
-  }
+  # (Removed) zones block not supported in this resource version
 
   # Private endpoint configuration for Premium SKU
   public_network_access_enabled = var.sku_name == "Premium" ? false : true

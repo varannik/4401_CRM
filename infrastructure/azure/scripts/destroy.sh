@@ -78,11 +78,27 @@ terraform init -backend-config="$BACKEND_CONFIG" -reconfigure
 
 echo -e "${RED}💥 Destroying infrastructure for ${ENVIRONMENT}...${NC}"
 
-# Run terraform destroy
+# Attempt graceful cleanup of Container App image versions to speed up ACR deletion (best effort)
+echo -e "${YELLOW}🧹 Pre-cleaning container registry (best effort)...${NC}"
+set +e
+REGISTRY_NAME=$(terraform -chdir="$TERRAFORM_DIR" output -raw container_registry_name 2>/dev/null)
+if [ -n "$REGISTRY_NAME" ]; then
+  REPOS=$(az acr repository list --name "$REGISTRY_NAME" -o tsv 2>/dev/null)
+  for repo in $REPOS; do
+    DIGESTS=$(az acr repository show-manifests --name "$REGISTRY_NAME" --repository "$repo" --query "[].digest" -o tsv 2>/dev/null)
+    for d in $DIGESTS; do
+      az acr repository delete --name "$REGISTRY_NAME" --image "$repo@${d}" --yes >/dev/null 2>&1 || true
+    done
+  done
+fi
+set -e
+
+# Run terraform destroy with parallelism for speed
 terraform destroy \
     -var-file="$ENV_FILE" \
+    -parallelism=10 \
     -auto-approve
 
 echo -e "${GREEN}✅ Infrastructure destroyed successfully!${NC}"
-echo -e "${YELLOW}📝 Note: Storage account with Terraform state is preserved${NC}"
-echo -e "${YELLOW}    Run 'az storage account delete' manually if you want to remove it${NC}"
+echo -e "${YELLOW}📝 Note: Terraform state storage is preserved.${NC}"
+echo -e "${YELLOW}    If you also want to remove the state storage account and container, delete them manually.${NC}"
