@@ -1,6 +1,6 @@
 "use client";
 
-import Layout from "@/components/Layout/index";
+import Layout from "@/components/Layout";
 import Overview from "./Overview";
 import RecentActivity from "./RecentActivity";
 import CompanyInsights from "./CompanyInsights";
