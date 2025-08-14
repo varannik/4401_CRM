@@ -112,7 +112,7 @@ resource "azurerm_container_app" "main" {
 
       env {
         name  = "NEXTAUTH_URL"
-        value = "https://${azurerm_container_app.main.latest_revision_fqdn}"
+        value = var.nextauth_url
       }
 
       # Azure AD configuration from Key Vault

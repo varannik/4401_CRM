@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
+import type { UserWithDepartment } from '@/types';
 
 // GET /api/users - List all users (sys_admin only)
 export async function GET(request: NextRequest) {
@@ -25,7 +24,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const users = await prisma.user.findMany({
+    const users: UserWithDepartment[] = await prisma.user.findMany({
       include: {
         department: {
           select: {
@@ -40,7 +39,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      users: users.map(user => ({
+      users: users.map((user) => ({
         id: user.id,
         email: user.email,
         name: user.name,

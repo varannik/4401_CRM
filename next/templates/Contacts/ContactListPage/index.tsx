@@ -241,14 +241,14 @@ const ContactListPage = ({ filterType }: ContactListPageProps) => {
         <Layout title={getPageTitle(filterType)}>
             <div className="max-w-6xl space-y-6">
                 {/* Filters */}
-                <Card className="card">
+                <Card className="card" title="Filters">
                     <div className="p-6 space-y-4">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                             <div className="flex-1 max-w-md">
                                 <Search
                                     placeholder="Search contacts, organizations, or emails..."
                                     value={searchTerm}
-                                    onChange={setSearchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
                             

@@ -1,4 +1,4 @@
-import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import { CloudWatchClient, PutMetricDataCommand, StandardUnit } from '@aws-sdk/client-cloudwatch';
 
 class MonitoringService {
   private cloudWatch: CloudWatchClient | null = null;
@@ -18,13 +18,13 @@ class MonitoringService {
   }
 
   async trackUserLogin(userId: string) {
-    await this.putMetric('UserLogin', 1, 'Count', [
+    await this.putMetric('UserLogin', 1, StandardUnit.Count, [
       { Name: 'Environment', Value: this.environment }
     ]);
   }
 
   async trackActiveUsers(count: number) {
-    await this.putMetric('ActiveUsers', count, 'Count', [
+    await this.putMetric('ActiveUsers', count, StandardUnit.Count, [
       { Name: 'Environment', Value: this.environment }
     ]);
   }
@@ -39,7 +39,7 @@ class MonitoringService {
       dimensions.push({ Name: 'UserId', Value: userId });
     }
 
-    await this.putMetric('PageView', 1, 'Count', dimensions);
+    await this.putMetric('PageView', 1, StandardUnit.Count, dimensions);
   }
 
   async trackApiCall(endpoint: string, method: string, statusCode: number, duration: number) {
@@ -51,8 +51,8 @@ class MonitoringService {
     ];
 
     await Promise.all([
-      this.putMetric('ApiCall', 1, 'Count', dimensions),
-      this.putMetric('ApiDuration', duration, 'Milliseconds', dimensions)
+      this.putMetric('ApiCall', 1, StandardUnit.Count, dimensions),
+      this.putMetric('ApiDuration', duration, StandardUnit.Milliseconds, dimensions)
     ]);
   }
 
@@ -64,8 +64,8 @@ class MonitoringService {
     ];
 
     await Promise.all([
-      this.putMetric('DatabaseQuery', 1, 'Count', dimensions),
-      this.putMetric('DatabaseQueryDuration', duration, 'Milliseconds', dimensions)
+      this.putMetric('DatabaseQuery', 1, StandardUnit.Count, dimensions),
+      this.putMetric('DatabaseQueryDuration', duration, StandardUnit.Milliseconds, dimensions)
     ]);
   }
 
@@ -81,13 +81,13 @@ class MonitoringService {
       });
     }
 
-    await this.putMetric('BusinessEvent', value, 'Count', dimensions);
+    await this.putMetric('BusinessEvent', value, StandardUnit.Count, dimensions);
   }
 
   private async putMetric(
     metricName: string,
     value: number,
-    unit: string,
+    unit: StandardUnit,
     dimensions: Array<{ Name: string; Value: string }> = []
   ) {
     try {
@@ -110,7 +110,9 @@ class MonitoringService {
         ],
       });
 
-      await this.cloudWatch.send(command);
+      if (this.cloudWatch) {
+        await this.cloudWatch.send(command);
+      }
     } catch (error) {
       console.error('Failed to send metric to CloudWatch:', error);
       // Don't throw - monitoring failures shouldn't break the app

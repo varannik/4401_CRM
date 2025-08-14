@@ -194,6 +194,12 @@ variable "custom_domain" {
   default     = ""
 }
 
+variable "dns_zone_id" {
+  description = "DNS zone ID for custom domain (optional)"
+  type        = string
+  default     = ""
+}
+
 # Monitoring Configuration
 variable "alert_email_addresses" {
   description = "List of email addresses for monitoring alerts"

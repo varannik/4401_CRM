@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // GET /api/departments - List all departments
 export async function GET(request: NextRequest) {
@@ -26,7 +24,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let departments;
+    type DepartmentWithCounts = {
+      id: string;
+      name: string;
+      description: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      _count: { users: number; companies: number };
+    };
+    let departments: DepartmentWithCounts[];
 
     if (currentUserRole === 'sys_admin') {
       // sys_admin can see all departments
@@ -59,7 +65,11 @@ export async function GET(request: NextRequest) {
 
       departments = [
         {
-          ...currentUser.department,
+          id: currentUser.department.id,
+          name: currentUser.department.name,
+          description: currentUser.department.description,
+          createdAt: currentUser.department.createdAt,
+          updatedAt: currentUser.department.updatedAt,
           _count: {
             users: await prisma.user.count({
               where: { departmentId: currentUser.departmentId }

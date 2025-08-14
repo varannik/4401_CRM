@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // PUT /api/users/[id] - Update user role and department
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     
     if (!session?.user) {
@@ -53,7 +52,7 @@ export async function PUT(
 
       // Check if the target user is in the same department or if assigning to their department
       const targetUser = await prisma.user.findUnique({
-        where: { id: params.id }
+        where: { id: id }
       });
 
       if (!targetUser) {
@@ -100,7 +99,7 @@ export async function PUT(
 
     // Update user
     const updatedUser = await prisma.user.update({
-      where: { id: params.id },
+      where: { id: id },
       data: {
         ...(role && { role }),
         ...(departmentId !== undefined && { departmentId })

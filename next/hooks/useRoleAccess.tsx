@@ -1,5 +1,4 @@
 import { useAuthStore } from '@/stores/auth-store';
-import React from 'react';
 import type { UserRole, RolePermissions } from '@/types/roles';
 export type { UserRole, RolePermissions } from '@/types/roles';
 
@@ -154,9 +153,9 @@ export const withRoleProtection = <P extends object>(
     const { hasPermission } = useRoleAccess();
     
     if (!hasPermission(requiredPermission)) {
-      return fallback || "Access denied";
+      return fallback || <div>Access denied</div>;
     }
     
-    return React.createElement(Component as React.ComponentType<P>, { ...(props as P) });
+    return <Component {...props} />;
   };
 };

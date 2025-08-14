@@ -69,10 +69,10 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 
 # Check if backend configuration exists
-BACKEND_CONFIG="$ROOT_DIR/environments/backend-${ENVIRONMENT}.conf"
+BACKEND_CONFIG="$ROOT_DIR/../environments/backend-${ENVIRONMENT}.conf"
 if [ ! -f "$BACKEND_CONFIG" ]; then
     echo -e "${RED}❌ Backend configuration not found: $BACKEND_CONFIG${NC}"
-    echo "Run ./setup-azure.sh first to create backend configuration"
+    echo "Backend configuration should be in infrastructure/environments/"
     exit 1
 fi
 

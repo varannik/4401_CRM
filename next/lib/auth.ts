@@ -1,39 +1,8 @@
 import { NextAuthOptions } from "next-auth"
 import AzureADProvider from "next-auth/providers/azure-ad"
-import { PrismaClient } from "@prisma/client"
+import { prisma } from "@/lib/prisma"
 
-const prisma = new PrismaClient()
-
-// Extend the built-in session types
-declare module "next-auth" {
-  interface Session {
-    userId?: string
-    accessToken?: string
-    refreshToken?: string
-    scope?: string
-    error?: string
-    user: {
-      id: string
-      name?: string | null
-      email?: string | null
-      image?: string | null
-      role?: string | null
-      departmentId?: string | null
-    }
-  }
-}
-
-declare module "next-auth/jwt" {
-  interface JWT {
-    accessToken?: string
-    refreshToken?: string
-    scope?: string
-    expiresAt?: number
-    userId?: string
-    role?: string
-    departmentId?: string
-  }
-}
+// Module augmentations moved to types/next-auth.d.ts
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -75,7 +44,7 @@ export const authOptions: NextAuthOptions = {
           
           if (dbUser) {
             token.role = dbUser.role
-            token.departmentId = dbUser.departmentId
+            token.departmentId = dbUser.departmentId || undefined
           } else {
             // Create new user with default consultant role
             const newUser = await prisma.user.create({
@@ -83,11 +52,11 @@ export const authOptions: NextAuthOptions = {
                 email: user.email || '',
                 name: user.name,
                 image: user.image,
-                role: 'consultant'
+                role: 'consultant' as const
               }
             })
             token.role = newUser.role
-            token.departmentId = newUser.departmentId
+            token.departmentId = newUser.departmentId || undefined
           }
         } catch (error) {
           console.error('Failed to fetch/create user from database:', error)

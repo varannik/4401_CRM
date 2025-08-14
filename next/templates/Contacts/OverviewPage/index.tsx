@@ -110,7 +110,7 @@ const ContactsOverviewPage = () => {
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {contactStats.map((stat, index) => (
-                        <Card key={index} className="card">
+                        <Card key={index} className="card" title={stat.title}>
                             <div className="p-6">
                                 <div className="flex items-center justify-between">
                                     <div>
@@ -139,7 +139,6 @@ const ContactsOverviewPage = () => {
                     <CardChartPie
                         title="Organization Types"
                         data={organizationTypeData}
-                        className="card"
                     />
 
                     {/* Quick Actions */}

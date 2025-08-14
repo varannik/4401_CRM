@@ -109,6 +109,11 @@ variable "key_vault_secrets" {
   default     = {}
 }
 
+variable "nextauth_url" {
+  description = "NextAuth URL for the application"
+  type        = string
+}
+
 variable "tags" {
   description = "Tags to apply to resources"
   type        = map(string)

@@ -11,8 +11,8 @@ import Filter from "./Filter";
 import { allNotifications } from "@/mocks/notifications";
 
 const categories = [
-    { id: 1, name: "Recent" },
-    { id: 2, name: "Earlier" },
+    { id: 'recent', title: 'Recent', name: "Recent" },
+    { id: 'earlier', title: 'Earlier', name: "Earlier" },
 ];
 
 const NotificationsPage = () => {

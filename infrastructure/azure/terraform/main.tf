@@ -8,20 +8,6 @@ terraform {
     # Use Azure Storage Account for state management
   }
   
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.80"
-    }
-    azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 2.45"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.4"
-    }
-  }
 }
 
 # Configure the Azure Provider
@@ -224,6 +210,9 @@ module "container_apps" {
   # Redis connection
   redis_connection_string     = module.redis.connection_string
   
+  # NextAuth URL - use Front Door URL if custom domain is provided, otherwise use Container App URL
+  nextauth_url               = var.custom_domain != "" ? "https://${var.custom_domain}" : "https://crm-${var.environment}.azurefd.net"
+  
   tags = local.common_tags
   
   depends_on = [
@@ -244,6 +233,7 @@ module "front_door" {
   
   backend_address    = module.container_apps.app_url
   custom_domain      = var.custom_domain
+  dns_zone_id        = var.dns_zone_id
   
   tags = local.common_tags
   
