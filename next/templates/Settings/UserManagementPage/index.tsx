@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Layout from "@/components/Layout/index";
+import Layout from "@/components/Layout";
 import Card from "@/components/Card";
 import Table from "@/components/Table";
 import Button from "@/components/Button";
