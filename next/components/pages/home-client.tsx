@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import HeroSection from "@/components/Pages/hero-section"
-import DashboardButton from "@/components/UI/dashboard-button"
+import HeroSection from "@/components/HeroSection"
+import DashboardButton from "@/components/DashboardButton"
 import SignInDialog from "@/components/Auth/signin-dialog"
-import Footer from "@/components/Pages/footer"
+import Footer from "@/components/Footer"
 import { BubbleBackground } from "@/components/animate-ui/backgrounds/bubble"
 import HomePage from "@/templates/HomePage"
 

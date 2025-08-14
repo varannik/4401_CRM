@@ -10,7 +10,7 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/animate-ui/radix/dialog'
-import HolographicButton from '@/components/UI/holographic-button'
+import HolographicButton from '@/components/HolographicButton'
 
 interface SignInDialogProps {
   open: boolean;
