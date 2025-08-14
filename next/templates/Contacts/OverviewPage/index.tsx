@@ -1,6 +1,6 @@
 "use client";
 
-import Layout from "@/components/Layout";
+import Layout from "@/components/Layout/index";
 import Card from "@/components/Card";
 import CardChartPie from "@/components/CardChartPie";
 import Icon from "@/components/Icon";

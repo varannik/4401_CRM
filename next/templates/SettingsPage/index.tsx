@@ -1,7 +1,7 @@
 "use client";
 
 import { Element } from "react-scroll";
-import Layout from "@/components/Layout";
+import Layout from "@/components/Layout/index";
 import Menu from "./Menu";
 import ProfileInformation from "./ProfileInformation";
 import YourShop from "./YourShop";

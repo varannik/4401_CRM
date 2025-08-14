@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useMedia } from "react-use";
-import Layout from "@/components/Layout";
+import Layout from "@/components/Layout/index";
 import Search from "@/components/Search";
 import Button from "@/components/Button";
 import Message from "./Message";

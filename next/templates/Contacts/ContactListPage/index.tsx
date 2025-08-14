@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Layout from "@/components/Layout";
+import Layout from "@/components/Layout/index";
 import Card from "@/components/Card";
 import Icon from "@/components/Icon";
 import Search from "@/components/Search";
