@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Layout from "@/components/Layout";
+import Layout from "@/components/Layout/index";
 import Tabs from "@/components/Tabs";
 import Button from "@/components/Button";
 import Modal from "@/components/Modal";
